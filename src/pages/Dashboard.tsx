@@ -399,7 +399,7 @@ const Dashboard: React.FC = () => {
       <main
         style={{
           flex: 1,
-          marginLeft: window.innerWidth >= 1024 ? "280px" : "0",
+          marginLeft: window.innerWidth >= 1024 ? "230px" : "0",
           position: "relative",
         }}
       >
@@ -429,9 +429,21 @@ const Dashboard: React.FC = () => {
             }}
           />
 
-          <HPBar />
+          {/* HP Bar Overlay on Game */}
+          <div
+            style={{
+              position: "absolute",
+              top: "20px", // Adjust the distance from top as needed
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 10, // Ensure it's on top of the game
+            }}
+          >
+            <HPBar />
+          </div>
+
           <motion.div
-            style={{ backgroundColor: "transparent", padding: "20px" }}
+            style={{ backgroundColor: "transparent" }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, type: "spring", bounce: 0.3 }}

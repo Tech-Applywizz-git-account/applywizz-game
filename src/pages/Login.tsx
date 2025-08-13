@@ -157,7 +157,7 @@ const Login = () => {
       const user = decodeJwt(token as string);
       localStorage.setItem("role", (user as any).role);
       setSuccessMsg("Logged in successfully!");
-      setTimeout(() => navigate("/welcome"), 400);
+      setTimeout(() => navigate("/dashboard"), 400);
     } catch (err: any) {
       const message = err?.message || "Network error. Please try again.";
       setErrorMsg(message);

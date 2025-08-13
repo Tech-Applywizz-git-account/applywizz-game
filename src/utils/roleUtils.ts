@@ -3,12 +3,12 @@
  */
 
 /**
- * Check if the current user has career-associate role
- * @returns boolean indicating if user is a career-associate
+ * Check if the current user has career-associate or equivalent roles
+ * @returns boolean indicating if user has access to career associate features
  */
 export const isCareerAssociate = (): boolean => {
   const role = localStorage.getItem("role");
-  return role === "career-associate";
+  return role === "career-associate" || role === "CA" || role === "Team Lead" || role === "Junior CA";
 };
 
 /**

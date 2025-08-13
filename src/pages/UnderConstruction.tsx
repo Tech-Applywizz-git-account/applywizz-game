@@ -15,8 +15,6 @@ import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { decodeJwt } from "jose";
-import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
-import { RoleFallbackUI, ErrorUI, LoadingUI, NoDataUI } from "../components/FallbackComponents";
 
 interface UnderConstructionProps {
   title: string;
@@ -432,196 +430,204 @@ export const Settings: React.FC = () => {
               </div>
             </motion.div>
           </Card>
-          {/* Progress Overview Card - Role-based conditional rendering */}
-          {isCareerAssociate() ? (
-            <Card
+          <Card
+            style={{
+              padding: spacing["2xl"],
+              marginBottom: spacing.xl,
+            }}
+          >
+            <div
               style={{
-                padding: spacing["2xl"],
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
                 marginBottom: spacing.xl,
+                flexWrap: "wrap",
+                gap: spacing.md,
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                  margin: 0,
+                }}
+              >
+                Progress Overview
+              </h3>
+
+              {/* Time Range Selector */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: spacing.sm,
+                  flexWrap: "wrap",
+                }}
+              >
+                {timeRangeOptions.map((option) => (
+                  <motion.button
+                    key={option.value}
+                    onClick={() => handleTimeRangeChange(option.value)}
+                    disabled={chartLoading}
+                    style={{
+                      padding: `${spacing.sm} ${spacing.md}`,
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor:
+                        selectedTimeRange === option.value
+                          ? colors.primary
+                          : colors.surfaceLight,
+                      color:
+                        selectedTimeRange === option.value
+                          ? colors.textPrimary
+                          : colors.textSecondary,
+                      fontSize: "0.85rem",
+                      fontWeight: "600",
+                      cursor: chartLoading ? "not-allowed" : "pointer",
+                      opacity: chartLoading ? 0.6 : 1,
+                      transition: "all 0.2s ease",
+                    }}
+                    whileHover={
+                      !chartLoading
+                        ? {
+                            backgroundColor:
+                              selectedTimeRange === option.value
+                                ? colors.primaryDark
+                                : colors.surface,
+                          }
+                        : {}
+                    }
+                    whileTap={!chartLoading ? { scale: 0.95 } : {}}
+                  >
+                    {option.label}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart Container */}
+            <motion.div
+              style={{
+                height: "400px",
+                width: "100%",
+                position: "relative",
+                opacity: chartLoading ? 0.5 : 1,
+                transition: "opacity 0.3s ease",
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: chartLoading ? 0.5 : 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              {chartLoading && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 10,
+                  }}
+                >
+                  <motion.div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      border: `3px solid ${colors.surfaceLight}`,
+                      borderTop: `3px solid ${colors.primary}`,
+                      borderRadius: "50%",
+                    }}
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  />
+                </div>
+              )}
+
+              {chartExists && (
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart
+                    data={(chartData as any)?.user_data || []}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 20,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={colors.surfaceLight}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke={colors.textSecondary}
+                      fontSize={12}
+                    />
+                    <YAxis stroke={colors.textSecondary} fontSize={12} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: colors.surface,
+                        border: `1px solid ${colors.surfaceLight}`,
+                        borderRadius: "8px",
+                        color: colors.textPrimary,
+                        fontSize: "0.875rem",
+                      }}
+                      labelStyle={{ color: colors.textSecondary }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="tasks"
+                      stroke={colors.primary}
+                      strokeWidth={3}
+                      dot={{ fill: colors.primary, strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: colors.primaryLight }}
+                      name="Tasks Completed"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </motion.div>
+
+            {/* Chart Legend */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: spacing.xl,
+                marginTop: spacing.lg,
+                flexWrap: "wrap",
               }}
             >
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: spacing.xl,
-                  flexWrap: "wrap",
-                  gap: spacing.md,
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: "1.5rem",
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                    margin: 0,
-                  }}
-                >
-                  Progress Overview
-                </h3>
-
-                {/* Time Range Selector */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: spacing.sm,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {timeRangeOptions.map((option) => (
-                    <motion.button
-                      key={option.value}
-                      onClick={() => handleTimeRangeChange(option.value)}
-                      disabled={chartLoading}
-                      style={{
-                        padding: `${spacing.sm} ${spacing.md}`,
-                        borderRadius: "8px",
-                        border: "none",
-                        backgroundColor:
-                          selectedTimeRange === option.value
-                            ? colors.primary
-                            : colors.surfaceLight,
-                        color:
-                          selectedTimeRange === option.value
-                            ? colors.textPrimary
-                            : colors.textSecondary,
-                        fontSize: "0.85rem",
-                        fontWeight: "600",
-                        cursor: chartLoading ? "not-allowed" : "pointer",
-                        opacity: chartLoading ? 0.6 : 1,
-                        transition: "all 0.2s ease",
-                      }}
-                      whileHover={
-                        !chartLoading
-                          ? {
-                              backgroundColor:
-                                selectedTimeRange === option.value
-                                  ? colors.primaryDark
-                                  : colors.surface,
-                            }
-                          : {}
-                      }
-                      whileTap={!chartLoading ? { scale: 0.95 } : {}}
-                    >
-                      {option.label}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Chart Container with enhanced error handling */}
-              <motion.div
-                style={{
-                  height: "400px",
-                  width: "100%",
-                  position: "relative",
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                {chartLoading ? (
-                  <LoadingUI 
-                    type="skeleton" 
-                    message="Loading your progress chart..."
-                  />
-                ) : !chartData ? (
-                  <NoDataUI 
-                    title="No Chart Data"
-                    message="We couldn't find any chart data for the selected time range. Try a different time period or complete some tasks to see your progress."
-                  />
-                ) : !chartExists ? (
-                  <ErrorUI 
-                    error="Invalid chart data format received from server"
-                  />
-                ) : (
-                  <ResponsiveContainer width="100%" height={400}>
-                    <LineChart
-                      data={(chartData as any)?.user_data || []}
-                      margin={{
-                        top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 20,
-                      }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={colors.surfaceLight}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        stroke={colors.textSecondary}
-                        fontSize={12}
-                      />
-                      <YAxis stroke={colors.textSecondary} fontSize={12} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: colors.surface,
-                          border: `1px solid ${colors.surfaceLight}`,
-                          borderRadius: "8px",
-                          color: colors.textPrimary,
-                          fontSize: "0.875rem",
-                        }}
-                        labelStyle={{ color: colors.textSecondary }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="tasks"
-                        stroke={colors.primary}
-                        strokeWidth={3}
-                        dot={{ fill: colors.primary, strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: colors.primaryLight }}
-                        name="Tasks Completed"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </motion.div>
-
-              {/* Chart Legend */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: spacing.xl,
-                  marginTop: spacing.lg,
-                  flexWrap: "wrap",
+                  gap: spacing.sm,
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: spacing.sm,
+                    width: "12px",
+                    height: "12px",
+                    backgroundColor: colors.primary,
+                    borderRadius: "50%",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "0.875rem",
+                    color: colors.textSecondary,
                   }}
                 >
-                  <div
-                    style={{
-                      width: "12px",
-                      height: "12px",
-                      backgroundColor: colors.primary,
-                      borderRadius: "50%",
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: "0.875rem",
-                      color: colors.textSecondary,
-                    }}
-                  >
-                    Tasks Completed
-                  </span>
-                </div>
+                  Tasks Completed
+                </span>
               </div>
-            </Card>
-          ) : (
-            <RoleFallbackUI
-              title="Progress Analytics"
-              message={`Advanced progress analytics are available for career associates. Your current role is "${getCurrentRole() || 'not set'}". Contact your admin to access detailed analytics.`}
-            />
-          )}
+            </div>
+          </Card>
 
           {/* Logout Section */}
           <Card
@@ -751,117 +757,97 @@ export const Leaderboard: React.FC = () => {
             Leaderboard
           </h1>
 
-          {/* Personal Progress - Role-based conditional rendering */}
-          {isCareerAssociate() ? (
-            <Card
+          {/* Personal Progress */}
+          <Card
+            style={{
+              marginBottom: spacing.xl,
+              background: `linear-gradient(135deg, ${colors.primary}10 0%, ${colors.secondary}05 100%)`,
+              border: `1px solid ${colors.primary}20`,
+            }}
+          >
+            <h2
               style={{
-                marginBottom: spacing.xl,
-                background: `linear-gradient(135deg, ${colors.primary}10 0%, ${colors.secondary}05 100%)`,
-                border: `1px solid ${colors.primary}20`,
+                fontSize: "1.5rem",
+                fontWeight: "600",
+                color: colors.textPrimary,
+                marginBottom: spacing.lg,
+                display: "flex",
+                alignItems: "center",
+                gap: spacing.sm,
               }}
             >
-              <h2
+              <div
                 style={{
-                  fontSize: "1.5rem",
-                  fontWeight: "600",
-                  color: colors.textPrimary,
-                  marginBottom: spacing.lg,
+                  width: "32px",
+                  height: "32px",
+                  backgroundColor: colors.primary,
+                  borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
-                  gap: spacing.sm,
+                  justifyContent: "center",
+                  fontSize: "0.9rem",
+                  fontWeight: "700",
+                  color: colors.textPrimary,
                 }}
               >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    backgroundColor: colors.primary,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.9rem",
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                  }}
-                >
-                  JD
-                </div>
-                My Progress
-              </h2>
+                JD
+              </div>
+              My Progress
+            </h2>
 
-              {/* Enhanced error handling for personal progress */}
-              {isLoading ? (
-                <LoadingUI 
-                  type="skeleton" 
-                  message="Loading your personal progress..."
-                />
-              ) : !data ? (
-                <NoDataUI 
-                  title="No Progress Data"
-                  message="We couldn't find your personal progress data. Complete some tasks to see your stats here!"
-                />
-              ) : (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                    gap: spacing.lg,
-                  }}
-                >
-                  {/* Rank Card */}
-                  <Card>
-                    <div style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          fontSize: "2rem",
-                          color: colors.primary,
-                          fontWeight: "700",
-                        }}
-                      >
-                        #{personalProgress.rank || "N/A"}
-                      </div>
-                      <div>Current Rank</div>
-                      <div style={{ color: colors.textMuted }}>
-                        of {personalProgress.totalParticipants || "0"}{" "}
-                        {activeTab === "team" ? "teams" : "players"}
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Tasks Card */}
-                  <Card>
-                    <div style={{ textAlign: "center" }}>
-                      <div
-                        style={{
-                          fontSize: "2rem",
-                          color: colors.success,
-                          fontWeight: "700",
-                        }}
-                      >
-                        {personalProgress.completedTasks || "0"}/
-                        {personalProgress.totalTasks || "0"}
-                      </div>
-                      <div>Tasks Completed</div>
-                      <div style={{ color: colors.textMuted }}>
-                        {Math.round(
-                          ((personalProgress.completedTasks || 0) /
-                            (personalProgress.totalTasks || 1)) *
-                            100
-                        )}
-                        % completion
-                      </div>
-                    </div>
-                  </Card>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: spacing.lg,
+              }}
+            >
+              {/* Rank Card */}
+              <Card>
+                <div style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      fontSize: "2rem",
+                      color: colors.primary,
+                      fontWeight: "700",
+                    }}
+                  >
+                    #{personalProgress.rank}
+                  </div>
+                  <div>Current Rank</div>
+                  <div style={{ color: colors.textMuted }}>
+                    of {personalProgress.totalParticipants}{" "}
+                    {activeTab === "team" ? "teams" : "players"}
+                  </div>
                 </div>
-              )}
-            </Card>
-          ) : (
-            <RoleFallbackUI
-              title="Personal Leaderboard Progress" 
-              message={`Detailed leaderboard analytics are available for career associates. Your current role is "${getCurrentRole() || 'not set'}". Contact your admin to access personal progress tracking.`}
-            />
-          )}
+              </Card>
+
+              {/* Tasks Card */}
+              <Card>
+                <div style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      fontSize: "2rem",
+                      color: colors.success,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {personalProgress.completedTasks}/
+                    {personalProgress.totalTasks}
+                  </div>
+                  <div>Tasks Completed</div>
+                  <div style={{ color: colors.textMuted }}>
+                    {Math.round(
+                      (personalProgress.completedTasks /
+                        personalProgress.totalTasks) *
+                        100
+                    )}
+                    % completion
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </Card>
 
           {/* Tabs & Period Toggles */}
           <div

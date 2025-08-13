@@ -150,7 +150,7 @@ class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
 
     const padX = 0; // horizontal margin
-    const padY = 55; // vertical lift — increase to move Thanos up
+    const padY = 75; // vertical lift — increase to move Thanos up
 
     // natural image size
     const tex = this.textures
@@ -173,7 +173,7 @@ class ArenaScene extends Phaser.Scene {
   }
   private getGroundY(): number {
     // tune this single number to match the background's stone top line
-    return this.cameras.main.height - 200;
+    return this.cameras.main.height - 225;
   }
 
   private targetXInFrontOfThanos(gap = 30): number {
@@ -188,7 +188,7 @@ class ArenaScene extends Phaser.Scene {
     const inset = (CONFIG.thanos as any).leftInsetPx * scaleX; // scale the visual inset
     const thanosLeftVisual = this.thanos.getBounds().left + inset;
     const halfAttacker = this.attacker.displayWidth * this.attacker.originX; // 0.5 by default
-    // base stop: attacker's RIGHT edge is `gap` before visual left edge
+    // base stop: attacker's RIGHT edge is gap before visual left edge
     const base = thanosLeftVisual - gap - halfAttacker; // bump the fighter a bit further TOWARD Thanos (positive values move right)
     const bumpTowardThanosPx = 12; // tweak: try 8–18 until it looks perfect
     return Math.round(base + bumpTowardThanosPx);
@@ -565,7 +565,7 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
     <Card
       style={{
         padding: "0",
-        overflow: "visible",
+        overflow: "hidden",
         border: "2px solid rgba(99, 102, 241, 0.2)",
         boxShadow: "0 10px 30px rgba(99, 102, 241, 0.1)",
         background:
@@ -576,8 +576,8 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
         ref={gameRef}
         id="phaser-thanos-container"
         style={{
-          width: "100%",
-          height: "90vh",
+          width: window.innerWidth >= 1024 ? "calc(100vw - 280px)" : "100vw",
+          height: "100vh",
           borderRadius: "14px",
           overflow: "hidden",
           background: "transparent",
