@@ -2,10 +2,6 @@ import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./ui/card";
 
-interface ThanosGameProps {
-  isThanosDead: boolean;
-}
-
 interface GameConfig {
   thanos: {
     scale: number;
@@ -91,14 +87,6 @@ class ArenaScene extends Phaser.Scene {
     super("ArenaScene");
   }
 
-  /**
-   * Initialize the scene with Thanos death state
-   * @param data - Scene initialization data containing isThanosDead state
-   */
-  init(data: { isThanosDead: boolean }): void {
-    this.isThanosDead = data.isThanosDead || false;
-  }
-
   preload(): void {
     this.load.image("thanos", "/assets/thanos.png");
 
@@ -171,6 +159,7 @@ class ArenaScene extends Phaser.Scene {
     this.thanos.setOrigin(1, 1);
     this.thanos.setPosition(cam.width - padX, cam.height - padY);
   }
+
   private getGroundY(): number {
     // tune this single number to match the background's stone top line
     return this.cameras.main.height - 225;
@@ -231,6 +220,8 @@ class ArenaScene extends Phaser.Scene {
     this.startBattleSequence();
 
     this.scale.on("resize", this.resize, this);
+
+    this.game.events.emit("arena-ready", this);
   }
 
   /**
@@ -253,23 +244,31 @@ class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /**
+  /*
    * Update the death state and handle transitions
    * @param isThanosDead - New death state
    */
-  updateDeathState(isThanosDead: boolean): void {
-    if (this.isThanosDead !== isThanosDead) {
-      this.isThanosDead = isThanosDead;
 
-      if (isThanosDead && !this.deathSequenceStarted) {
-        // Stop light attacks and start death sequence
-        if (this.lightAttackTimer) {
-          this.lightAttackTimer.destroy();
-        }
-        this.deathSequenceStarted = true;
-        this.performHeavyAttack();
-      }
+  triggerThanosDeath(): void {
+    if (this.isBusy) {
+      console.log("Scene is busy, can't trigger death now");
+      return;
     }
+
+    console.log("Triggering Thanos death from scene");
+
+    // Cancel any ongoing light attacks
+    if (this.lightAttackTimer) {
+      this.lightAttackTimer.destroy();
+      this.lightAttackTimer = undefined;
+    }
+
+    // Set flags to prevent other actions
+    this.deathSequenceStarted = true;
+    this.isBusy = true;
+
+    console.log("Calling performHeavyAttack from triggerThanosDeath");
+    this.performHeavyAttack();
   }
 
   createAnimations(): void {
@@ -338,7 +337,8 @@ class ArenaScene extends Phaser.Scene {
    * Perform a heavy attack - attacker dashes in, kills Thanos, and remains
    */
   private performHeavyAttack(): void {
-    if (this.isThanosDead || this.isBusy) return;
+    console.log("Performing heavy attack");
+    if (this.isBusy && !this.deathSequenceStarted) return;
     this.isBusy = true;
 
     const originalX = this.attacker.x;
@@ -382,6 +382,7 @@ class ArenaScene extends Phaser.Scene {
             // Keep tint for 150ms, then clear & kill
             this.time.delayedCall(150, () => {
               this.thanos.clearTint();
+
               this.killThanosLikeMario(); // start death animation
             });
           });
@@ -429,7 +430,8 @@ class ArenaScene extends Phaser.Scene {
   }
 
   private killThanosLikeMario(): void {
-    if (this.isThanosDead) return;
+    console.log("Starting Mario death animation");
+
     this.isThanosDead = true;
     this.thanos.clearTint();
 
@@ -509,14 +511,17 @@ class ArenaScene extends Phaser.Scene {
   }
 }
 
+interface ThanosGameProps {
+  isThanosDead: boolean;
+}
+
 const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
-  const gameRef = useRef<HTMLDivElement>(null);
-  const phaserGameRef = useRef<Phaser.Game | null>(null);
-  const sceneRef = useRef<ArenaScene | null>(null);
+  const gameRef = useRef<Phaser.Game | null>(null);
+  const sceneReadyRef = useRef(false);
+  const queuedDeathRef = useRef(false);
 
   useEffect(() => {
-    if (!gameRef.current) return;
-    if (phaserGameRef.current) return;
+    if (gameRef.current) return;
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
@@ -527,40 +532,50 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
         height: "100%",
       },
       backgroundColor: "transparent",
-      parent: gameRef.current,
+      parent: "phaser-thanos-container",
       physics: {
         default: "arcade",
-        arcade: {
-          debug: false,
-        },
+        arcade: { debug: false },
       },
       scene: [ArenaScene],
     };
 
-    phaserGameRef.current = new Phaser.Game(config);
+    gameRef.current = new Phaser.Game(config);
 
-    // Store reference to the scene for later updates
-    phaserGameRef.current.scene.start("ArenaScene", { isThanosDead });
-    sceneRef.current = phaserGameRef.current.scene.getScene(
-      "ArenaScene"
-    ) as ArenaScene;
-
-    return () => {
-      if (phaserGameRef.current) {
-        phaserGameRef.current.destroy(true);
-        phaserGameRef.current = null;
-        sceneRef.current = null;
+    gameRef.current.events.on("arena-ready", (scene: ArenaScene) => {
+      sceneReadyRef.current = true;
+      if (queuedDeathRef.current) {
+        scene.triggerThanosDeath();
+        queuedDeathRef.current = false;
       }
+    });
+    // Pass initial state to scene
+    return () => {
+      gameRef.current?.destroy(true);
+      gameRef.current = null;
+      sceneReadyRef.current = false;
     };
-  }, []);
-
-  // Update scene when death state changes
+  }, []); // Update scene when death state changes
   useEffect(() => {
-    if (sceneRef.current) {
-      sceneRef.current.updateDeathState(isThanosDead);
+    if (isThanosDead) {
+      // Changed condition
+      console.log("Death trigger activated");
+
+      if (!gameRef.current) {
+        queuedDeathRef.current = true;
+        return;
+      }
+
+      const scene = gameRef.current.scene.getScene("ArenaScene") as ArenaScene;
+      if (scene && sceneReadyRef.current) {
+        console.log("Triggering death in scene");
+        scene.triggerThanosDeath();
+      } else {
+        console.log("Queueing death for later");
+        queuedDeathRef.current = true;
+      }
     }
   }, [isThanosDead]);
-
   return (
     <Card
       style={{
@@ -573,7 +588,6 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
       }}
     >
       <div
-        ref={gameRef}
         id="phaser-thanos-container"
         style={{
           width: window.innerWidth >= 1024 ? "calc(100vw - 280px)" : "100vw",
