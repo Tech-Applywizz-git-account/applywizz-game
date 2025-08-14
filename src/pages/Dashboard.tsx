@@ -48,23 +48,13 @@ const useThanosHP = () => {
 
   // Always use fallback data if we don't have valid backend data
   const thanosData =
-    thanos && typeof thanos === "object" && (thanos as any).hp !== undefined
+    thanos && typeof thanos === "object" && thanos.hp !== undefined
       ? thanos
       : fallbackData;
 
   const { hp, total_hp } = thanosData as any;
   const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
-  const initialIsDead = clampedHP === 0;
-
-  const [isThanosDead, setIsThanosDead] = useState(initialIsDead);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("Simulating Thanos death");
-      setIsThanosDead(true);
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, []);
+  const isThanosDead = clampedHP === 0;
 
   return {
     hp: hp || 850,
