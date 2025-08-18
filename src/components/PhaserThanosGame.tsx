@@ -251,11 +251,8 @@ class ArenaScene extends Phaser.Scene {
 
   triggerThanosDeath(): void {
     if (this.isBusy) {
-      console.log("Scene is busy, can't trigger death now");
       return;
     }
-
-    console.log("Triggering Thanos death from scene");
 
     // Cancel any ongoing light attacks
     if (this.lightAttackTimer) {
@@ -267,7 +264,6 @@ class ArenaScene extends Phaser.Scene {
     this.deathSequenceStarted = true;
     this.isBusy = true;
 
-    console.log("Calling performHeavyAttack from triggerThanosDeath");
     this.performHeavyAttack();
   }
 
@@ -337,7 +333,6 @@ class ArenaScene extends Phaser.Scene {
    * Perform a heavy attack - attacker dashes in, kills Thanos, and remains
    */
   private performHeavyAttack(): void {
-    console.log("Performing heavy attack");
     if (this.isBusy && !this.deathSequenceStarted) return;
     this.isBusy = true;
 
@@ -430,8 +425,6 @@ class ArenaScene extends Phaser.Scene {
   }
 
   private killThanosLikeMario(): void {
-    console.log("Starting Mario death animation");
-
     this.isThanosDead = true;
     this.thanos.clearTint();
 
@@ -559,7 +552,6 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
   useEffect(() => {
     if (isThanosDead) {
       // Changed condition
-      console.log("Death trigger activated");
 
       if (!gameRef.current) {
         queuedDeathRef.current = true;
@@ -568,10 +560,8 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
 
       const scene = gameRef.current.scene.getScene("ArenaScene") as ArenaScene;
       if (scene && sceneReadyRef.current) {
-        console.log("Triggering death in scene");
         scene.triggerThanosDeath();
       } else {
-        console.log("Queueing death for later");
         queuedDeathRef.current = true;
       }
     }

@@ -15,7 +15,6 @@ import Avatar, { AvatarData } from "../components/Avatar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
-import { decodeJwt } from "jose";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import {
   RoleFallbackUI,

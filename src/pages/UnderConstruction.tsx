@@ -812,11 +812,11 @@ export const Leaderboard: React.FC = () => {
                       fontWeight: "700",
                     }}
                   >
-                    #{personalProgress.rank}
+                    #{personalProgress.rank ?? "NA"}
                   </div>
                   <div>Current Rank</div>
                   <div style={{ color: colors.textMuted }}>
-                    of {personalProgress.totalParticipants}{" "}
+                    of {personalProgress?.totalParticipants ?? "NA"}{" "}
                     {activeTab === "team" ? "teams" : "players"}
                   </div>
                 </div>
@@ -832,17 +832,19 @@ export const Leaderboard: React.FC = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {personalProgress.completedTasks}/
-                    {personalProgress.totalTasks}
+                    {personalProgress?.completedTasks ?? "NA"}/
+                    {personalProgress?.totalTasks ?? "NA"}{" "}
                   </div>
                   <div>Tasks Completed</div>
                   <div style={{ color: colors.textMuted }}>
-                    {Math.round(
-                      (personalProgress.completedTasks /
-                        personalProgress.totalTasks) *
-                        100
-                    )}
-                    % completion
+                    {personalProgress?.completedTasks != null &&
+                    personalProgress?.totalTasks != null
+                      ? `${Math.round(
+                          (personalProgress.completedTasks /
+                            personalProgress.totalTasks) *
+                            100
+                        )}% completion`
+                      : "NA"}{" "}
                   </div>
                 </div>
               </Card>
