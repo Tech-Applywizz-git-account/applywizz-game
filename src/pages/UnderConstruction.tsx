@@ -11,11 +11,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Sidebar from "../components/Sidebar";
+import FloatingNavbar from "../components/FloatingNavbar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
+import { isCareerAssociate } from "../utils/roleUtils";
 
 interface UnderConstructionProps {
   title: string;
@@ -686,7 +688,10 @@ type teamEntry = {
 type LeaderboardEntry = individualEntry | teamEntry;
 // Leaderboard Component
 export const Leaderboard: React.FC = () => {
+  const hasCareerAccess = isCareerAssociate();
+  
   const [activeTab, setActiveTab] = useState<TabType>("team");
+  // For non-access users, always set period to "today"
   const [period, setPeriod] = useState<PeriodType>("today");
 
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
@@ -732,12 +737,13 @@ export const Leaderboard: React.FC = () => {
         display: "flex",
       }}
     >
-      <Sidebar />
+      {/* Conditional navigation - Sidebar for career associates, FloatingNavbar for others */}
+      {hasCareerAccess ? <Sidebar /> : <FloatingNavbar />}
 
       <main
         style={{
           flex: 1,
-          marginLeft: window.innerWidth >= 1024 ? "280px" : "0",
+          marginLeft: hasCareerAccess && window.innerWidth >= 1024 ? "280px" : "0",
           padding: spacing["2xl"],
         }}
       >
@@ -758,14 +764,15 @@ export const Leaderboard: React.FC = () => {
             Leaderboard
           </h1>
 
-          {/* Personal Progress */}
-          <Card
-            style={{
-              marginBottom: spacing.xl,
-              background: `linear-gradient(135deg, ${colors.primary}10 0%, ${colors.secondary}05 100%)`,
-              border: `1px solid ${colors.primary}20`,
-            }}
-          >
+          {/* Personal Progress - Only for career associates */}
+          {hasCareerAccess && (
+            <Card
+              style={{
+                marginBottom: spacing.xl,
+                background: `linear-gradient(135deg, ${colors.primary}10 0%, ${colors.secondary}05 100%)`,
+                border: `1px solid ${colors.primary}20`,
+              }}
+            >
             <h2
               style={{
                 fontSize: "1.5rem",
@@ -850,7 +857,8 @@ export const Leaderboard: React.FC = () => {
                 </div>
               </Card>
             </div>
-          </Card>
+            </Card>
+          )}
 
           {/* Tabs & Period Toggles */}
           <div
@@ -892,8 +900,9 @@ export const Leaderboard: React.FC = () => {
               ))}
             </Card>
 
-            {/* Period Toggle */}
-            <Card style={{ display: "flex", padding: "4px" }}>
+            {/* Period Toggle - Only for career associates */}
+            {hasCareerAccess && (
+              <Card style={{ display: "flex", padding: "4px" }}>
               {[
                 { id: "today", label: "Today" },
                 { id: "week", label: "Week" },
@@ -921,7 +930,8 @@ export const Leaderboard: React.FC = () => {
                   {p.label}
                 </motion.button>
               ))}
-            </Card>
+              </Card>
+            )}
           </div>
 
           {/* Leaderboard */}
@@ -984,9 +994,139 @@ export const Leaderboard: React.FC = () => {
   );
 };
 
+const BAR_WIDTH = 600; // Wider visual bar for clarity
+
+/**
+ * Team HP Bar component for non-access users in Spaces
+ */
+const TeamHPBar: React.FC = () => {
+  const { data: teamHP, isLoading } = useBackendQuery("team-hp", "/api/v1/team-hp");
+
+  // Fallback data for when backend is unavailable
+  const fallbackData = { hp: 750, total_hp: 1000 };
+
+  // Always use fallback data if we don't have valid backend data
+  const hpData =
+    teamHP && typeof teamHP === "object" && teamHP.hp !== undefined
+      ? teamHP
+      : fallbackData;
+
+  const { hp, total_hp } = hpData as any;
+  const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
+
+  // Only show loading if we're actually loading and don't have an error yet
+  if (isLoading) return <div>Loading...</div>;
+
+  const fillWidth = (clampedHP / total_hp) * BAR_WIDTH;
+
+  return (
+    <motion.div
+      style={{
+        marginTop: spacing.xl,
+        textAlign: "center",
+      }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.7 }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: spacing.sm,
+          width: BAR_WIDTH,
+          margin: "0 auto",
+        }}
+      >
+        <span
+          style={{
+            color: colors.textSecondary,
+            fontSize: "0.9rem",
+            fontWeight: 600,
+          }}
+        >
+          Team Power Level
+        </span>
+        <span
+          style={{
+            color: colors.textPrimary,
+            fontSize: "1rem",
+            fontWeight: 700,
+          }}
+        >
+          {hp}/{total_hp}
+        </span>
+      </div>
+
+      <div
+        style={{
+          width: BAR_WIDTH,
+          height: "16px",
+          backgroundColor: colors.hpBackground,
+          borderRadius: "8px",
+          position: "relative",
+          overflow: "hidden",
+          margin: "0 auto",
+        }}
+      >
+        <motion.div
+          style={{
+            height: "100%",
+            backgroundColor:
+              clampedHP > total_hp * 0.7
+                ? colors.hpFull
+                : clampedHP > total_hp * 0.3
+                ? colors.hpMedium
+                : colors.hpLow,
+            borderRadius: "8px",
+            boxShadow:
+              clampedHP > total_hp * 0.7
+                ? `0 0 10px ${colors.hpFull}40`
+                : clampedHP > total_hp * 0.3
+                ? `0 0 10px ${colors.hpMedium}40`
+                : `0 0 10px ${colors.hpLow}40`,
+          }}
+          initial={{ width: 0 }}
+          animate={{ width: fillWidth }}
+          transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
+        />
+      </div>
+    </motion.div>
+  );
+};
+
 export const Spaces: React.FC = () => {
   const hasDesktopSidebar =
     typeof window !== "undefined" && window.innerWidth >= 1024;
+  const hasCareerAccess = isCareerAssociate();
+
+  // Fetch top-four data for non-access users
+  const { data: topFourData } = useBackendQuery("top-four", "/api/v1/top-four");
+
+  // Prepare players data for FourPlayerArena
+  const getPlayersData = () => {
+    if (!hasCareerAccess && topFourData && Array.isArray(topFourData.users)) {
+      // Extract usernames from top-four API response and map to players
+      const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
+      const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
+      
+      return users.map((user: any, index: number) => ({
+        uname: user.username || `User${index + 1}`,
+        characterId: characterIds[index] || "samurai",
+      }));
+    }
+    
+    // Default fallback data for career associates or when API fails
+    return [
+      { uname: "u1", characterId: "samurai" },
+      { uname: "u2", characterId: "shinobi" },
+      { uname: "u3", characterId: "samurai2" },
+      { uname: "u4", characterId: "samuraiArcher" },
+    ];
+  };
+
+  const playersData = getPlayersData();
 
   return (
     <div
@@ -997,16 +1137,33 @@ export const Spaces: React.FC = () => {
         display: "flex",
       }}
     >
-      <Sidebar />
+      {/* Conditional navigation - Sidebar for career associates, FloatingNavbar for others */}
+      {hasCareerAccess ? <Sidebar /> : <FloatingNavbar />}
 
       <main
         style={{
           flex: 1,
-          marginLeft: hasDesktopSidebar ? "280px" : "0",
+          marginLeft: hasCareerAccess && hasDesktopSidebar ? "280px" : "0",
           padding: 0, // no inner padding – let the game go full-bleed
           display: "flex",
+          position: "relative",
         }}
       >
+        {/* HP Bar Overlay for non-access users */}
+        {!hasCareerAccess && (
+          <div
+            style={{
+              position: "absolute",
+              top: "80px", // Below the floating navbar
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 10, // Ensure it's on top of the game
+            }}
+          >
+            <TeamHPBar />
+          </div>
+        )}
+
         <Card
           fullBleed
           hover={false}
@@ -1020,14 +1177,9 @@ export const Spaces: React.FC = () => {
             background: "transparent",
           }}
         >
-          {/* FourPlayer needs 4 users (username + characterId) */}
+          {/* FourPlayer arena with dynamic players data */}
           <FourPlayerArena
-            players={[
-              { uname: "u1", characterId: "samurai" },
-              { uname: "u2", characterId: "shinobi" },
-              { uname: "u3", characterId: "samurai2" },
-              { uname: "u4", characterId: "samuraiArcher" },
-            ]}
+            players={playersData as any}
             bossHp={0}
           />
         </Card>
