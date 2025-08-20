@@ -23,6 +23,9 @@ interface FourPlayerArenaProps {
   bossHp: number;
 }
 
+const DESIGN_W = 1280;
+const DESIGN_H = 720;
+
 /* ---------------------- Assets map ---------------------- */
 const CHAR_FOLDER: Record<CharacterId, string> = {
   fighter: "Fighter",
@@ -36,8 +39,8 @@ const CHAR_FOLDER: Record<CharacterId, string> = {
 /* ---------------------- Config ---------------------- */
 const CONFIG = {
   thanos: {
-    scale: 1.15,
-    yPosition: 420,
+    scale: .95,
+    yPosition: 370, // in design coords
     hitEffect: { scaleIncrease: 0.08, tintColor: 0xff0000, duration: 60 },
   },
   attacker: {
@@ -54,7 +57,7 @@ const CONFIG = {
     strokeThickness: 8,
   },
   platforms: { width: 220, height: 60 },
-  groundOffsetFromBottom: 270,
+  groundOffsetFromBottom: 270, // in design coords
 };
 
 type AttackerRecord = {
@@ -113,7 +116,10 @@ class ArenaScene extends Phaser.Scene {
   }
 
   preload() {
+    // backgrounds
     this.load.image("background", "assets/dark_background.png");
+    this.load.image("background_far", "assets/dark_background_far.png");
+
     this.load.image("thanos", "assets/thanos.png");
     this.load.image("platform", "assets/platform.png");
 
@@ -151,27 +157,30 @@ class ArenaScene extends Phaser.Scene {
   }
 
   create() {
-    const { width, height } = this.cameras.main;
+    // Author everything in DESIGN_W/DESIGN_H space
+    const width = DESIGN_W;
+    const height = DESIGN_H;
 
-    // parallax bgs
+    // parallax bgs (smaller so shake won't feel like zoom)
     this.bgFar = this.add
       .tileSprite(width / 2, height / 2, width, height, "background_far")
       .setScrollFactor(0);
     this.bgNear = this.add
-      .tileSprite(
-        width / 2,
-        height / 2 + 200,
-        width * 2,
-        height * 2,
-        "background"
-      )
+      .tileSprite(width / 2, height / 2 - 80 , width * 1.5, height * 1.5, "background")
       .setScrollFactor(0);
+
+    // 🔒 Lock camera: eliminate any zoom drift/wobble during shakes
+    const cam = this.cameras.main;
+    cam.setBounds(0, 0, DESIGN_W, DESIGN_H);
+    cam.setScroll(0, 0);
+    cam.setZoom(1);
+    cam.setRoundPixels(true);
 
     this.createAllAnims();
 
     // boss
     this.thanos = this.add
-      .image(width / 2, CONFIG.thanos.yPosition, "thanos")
+      .image(width / 2 - 50, CONFIG.thanos.yPosition, "thanos")
       .setScale(CONFIG.thanos.scale)
       .setDepth(2);
 
@@ -206,10 +215,10 @@ class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /* ---------------------- Helpers ---------------------- */
+  /* ---------------------- Helpers (use design coords) ---------------------- */
 
   private groundY() {
-    return this.cameras.main.height - CONFIG.groundOffsetFromBottom;
+    return DESIGN_H - CONFIG.groundOffsetFromBottom;
   }
   private isTop(id: SlotId) {
     return id === "TL" || id === "TR";
@@ -307,7 +316,9 @@ class ArenaScene extends Phaser.Scene {
   }
 
   private buildAttackers() {
-    const { width } = this.cameras.main;
+    const width = DESIGN_W;
+
+    // Positions authored in design space (stable everywhere)
     const padX = 160;
     const leftX = padX;
     const rightX = width - padX;
@@ -329,7 +340,7 @@ class ArenaScene extends Phaser.Scene {
       if (slot === "TL" || slot === "TR") {
         platformImg = this.add
           .image(c.x, c.y, "platform")
-          .setOrigin(0.5, -1)
+          .setOrigin(0.7, -1)
           .setDepth(1);
         platformImg.setScale(
           CONFIG.platforms.width / platformImg.width,
@@ -337,7 +348,7 @@ class ArenaScene extends Phaser.Scene {
         );
       }
 
-      const platformHome = { x: c.x, y: platformImg ? c.y - 40 : c.y };
+      const platformHome = { x: c.x - 40, y: platformImg ? c.y - 40 : c.y };
       const groundHome = { x: c.x, y: this.groundY() };
 
       const sprite = this.add
@@ -431,8 +442,9 @@ class ArenaScene extends Phaser.Scene {
             this.sound.play("sfx_impact", { volume: 0.7 });
             this.sound.play("sfx_slash", { volume: 0.6, rate: 1.05 });
 
+            // gentler shake to avoid perceived zoom
             this.time.delayedCall(120, () => {
-              this.cameras.main.shake(220, 0.006);
+              this.cameras.main.shake(200, 0.004);
               this.thanos.setTint(0xff0000);
               this.time.delayedCall(150, () => this.thanos.clearTint());
             });
@@ -491,7 +503,7 @@ class ArenaScene extends Phaser.Scene {
 
               this.time.delayedCall(120, () => {
                 this.cameras.main.flash(60, 255, 255, 255, false);
-                this.cameras.main.shake(220, 0.006);
+                this.cameras.main.shake(200, 0.004);
                 this.thanos.setTint(0xff0000);
                 this.time.delayedCall(150, () => this.thanos.clearTint());
               });
@@ -602,10 +614,7 @@ class ArenaScene extends Phaser.Scene {
 }
 
 /* ---------------------- React wrapper ---------------------- */
-const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
-  players,
-  bossHp,
-}) => {
+const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({ players, bossHp }) => {
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<ArenaScene | null>(null);
@@ -613,29 +622,50 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
   useEffect(() => {
     if (!gameRef.current || phaserGameRef.current) return;
 
+    // Parent element sizing and interaction guards
+    const parentEl = gameRef.current;
+    parentEl.style.width = "100%";
+    parentEl.style.height = "100svh"; // avoid mobile toolbar vh jumps
+    parentEl.style.position = "relative";
+    parentEl.style.background = "transparent";
+    parentEl.style.overflow = "hidden";
+    // reduce accidental browser zoom/scroll during shakes
+    (parentEl.style as any).touchAction = "none";
+    (parentEl.style as any).overscrollBehavior = "contain";
+
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      parent: gameRef.current,
+      parent: parentEl,
       backgroundColor: "transparent",
+
+      // Use virtual design resolution + FIT so world coords remain stable.
+      width: DESIGN_W,
+      height: DESIGN_H,
       scale: {
-        mode: Phaser.Scale.RESIZE,
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: "100%",
-        height: "100%",
+        zoom: 1, // keep canvas CSS zoom at 1
       },
+
       physics: { default: "arcade", arcade: { debug: false } },
       scene: [ArenaScene],
+      render: { pixelArt: false, antialias: true },
     };
 
     phaserGameRef.current = new Phaser.Game(config);
 
     // start with players and initial hp
     phaserGameRef.current.scene.start("ArenaScene", { players, bossHp });
-    sceneRef.current = phaserGameRef.current.scene.getScene(
-      "ArenaScene"
-    ) as ArenaScene;
+    sceneRef.current = phaserGameRef.current.scene.getScene("ArenaScene") as ArenaScene;
+
+    // keep canvas sized with window; Scale.FIT handles aspect safely
+    const onResize = () => {
+      phaserGameRef.current?.scale.refresh();
+    };
+    window.addEventListener("resize", onResize);
 
     return () => {
+      window.removeEventListener("resize", onResize);
       phaserGameRef.current?.destroy(true);
       phaserGameRef.current = null;
       sceneRef.current = null;
@@ -649,17 +679,7 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
 
   return (
     <Card fullBleed hover style={{ borderRadius: 16, overflow: "hidden" }}>
-      <div
-        ref={gameRef}
-        id="phaser-thanos-container"
-        style={{
-          width: "100%",
-          height: "100vh", // or a fixed ratio if you prefer
-          // aspectRatio: "16/9",    // alternative to height: 100vh
-          background: "transparent",
-          position: "relative",
-        }}
-      />
+      <div ref={gameRef} id="phaser-thanos-container" />
     </Card>
   );
 };
