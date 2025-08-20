@@ -41,7 +41,7 @@ const useThanosHP = () => {
     data: thanos,
     isLoading,
     error,
-  } = useBackendQuery("thanos-hp", "/thanos-hp");
+  } = useBackendQuery("thanos-hp", "/user-total-today");
 
   // Fallback data for when backend is unavailable
   const fallbackData = { hp: 850, total_hp: 1000 };

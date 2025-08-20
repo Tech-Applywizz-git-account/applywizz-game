@@ -1106,7 +1106,7 @@ export const Spaces: React.FC = () => {
   const hasCareerAccess = isCareerAssociate();
 
   // Fetch top-four data for non-access users
-  const { data: topFourData } = useBackendQuery("top-four", "/api/v1/top-four");
+  const { data: topFourData } = useBackendQuery("top-four", "/top-four");
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
@@ -1188,5 +1188,3 @@ export const Spaces: React.FC = () => {
     </div>
   );
 };
-
-export default Spaces;
