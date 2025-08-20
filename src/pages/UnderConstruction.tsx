@@ -689,7 +689,7 @@ type LeaderboardEntry = individualEntry | teamEntry;
 // Leaderboard Component
 export const Leaderboard: React.FC = () => {
   const hasCareerAccess = isCareerAssociate();
-  
+
   const [activeTab, setActiveTab] = useState<TabType>("team");
   // For non-access users, always set period to "today"
   const [period, setPeriod] = useState<PeriodType>("today");
@@ -743,7 +743,8 @@ export const Leaderboard: React.FC = () => {
       <main
         style={{
           flex: 1,
-          marginLeft: hasCareerAccess && window.innerWidth >= 1024 ? "280px" : "0",
+          marginLeft:
+            hasCareerAccess && window.innerWidth >= 1024 ? "280px" : "0",
           padding: spacing["2xl"],
         }}
       >
@@ -773,90 +774,90 @@ export const Leaderboard: React.FC = () => {
                 border: `1px solid ${colors.primary}20`,
               }}
             >
-            <h2
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: "600",
-                color: colors.textPrimary,
-                marginBottom: spacing.lg,
-                display: "flex",
-                alignItems: "center",
-                gap: spacing.sm,
-              }}
-            >
-              <div
+              <h2
                 style={{
-                  width: "32px",
-                  height: "32px",
-                  backgroundColor: colors.primary,
-                  borderRadius: "50%",
+                  fontSize: "1.5rem",
+                  fontWeight: "600",
+                  color: colors.textPrimary,
+                  marginBottom: spacing.lg,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "0.9rem",
-                  fontWeight: "700",
-                  color: colors.textPrimary,
+                  gap: spacing.sm,
                 }}
               >
-                JD
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    backgroundColor: colors.primary,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.9rem",
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  JD
+                </div>
+                My Progress
+              </h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: spacing.lg,
+                }}
+              >
+                {/* Rank Card */}
+                <Card>
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "2rem",
+                        color: colors.primary,
+                        fontWeight: "700",
+                      }}
+                    >
+                      #{personalProgress.rank ?? "NA"}
+                    </div>
+                    <div>Current Rank</div>
+                    <div style={{ color: colors.textMuted }}>
+                      of {personalProgress?.totalParticipants ?? "NA"}{" "}
+                      {activeTab === "team" ? "teams" : "players"}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Tasks Card */}
+                <Card>
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "2rem",
+                        color: colors.success,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {personalProgress?.completedTasks ?? "NA"}/
+                      {personalProgress?.totalTasks ?? "NA"}{" "}
+                    </div>
+                    <div>Tasks Completed</div>
+                    <div style={{ color: colors.textMuted }}>
+                      {personalProgress?.completedTasks != null &&
+                      personalProgress?.totalTasks != null
+                        ? `${Math.round(
+                            (personalProgress.completedTasks /
+                              personalProgress.totalTasks) *
+                              100
+                          )}% completion`
+                        : "NA"}{" "}
+                    </div>
+                  </div>
+                </Card>
               </div>
-              My Progress
-            </h2>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: spacing.lg,
-              }}
-            >
-              {/* Rank Card */}
-              <Card>
-                <div style={{ textAlign: "center" }}>
-                  <div
-                    style={{
-                      fontSize: "2rem",
-                      color: colors.primary,
-                      fontWeight: "700",
-                    }}
-                  >
-                    #{personalProgress.rank ?? "NA"}
-                  </div>
-                  <div>Current Rank</div>
-                  <div style={{ color: colors.textMuted }}>
-                    of {personalProgress?.totalParticipants ?? "NA"}{" "}
-                    {activeTab === "team" ? "teams" : "players"}
-                  </div>
-                </div>
-              </Card>
-
-              {/* Tasks Card */}
-              <Card>
-                <div style={{ textAlign: "center" }}>
-                  <div
-                    style={{
-                      fontSize: "2rem",
-                      color: colors.success,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {personalProgress?.completedTasks ?? "NA"}/
-                    {personalProgress?.totalTasks ?? "NA"}{" "}
-                  </div>
-                  <div>Tasks Completed</div>
-                  <div style={{ color: colors.textMuted }}>
-                    {personalProgress?.completedTasks != null &&
-                    personalProgress?.totalTasks != null
-                      ? `${Math.round(
-                          (personalProgress.completedTasks /
-                            personalProgress.totalTasks) *
-                            100
-                        )}% completion`
-                      : "NA"}{" "}
-                  </div>
-                </div>
-              </Card>
-            </div>
             </Card>
           )}
 
@@ -903,33 +904,33 @@ export const Leaderboard: React.FC = () => {
             {/* Period Toggle - Only for career associates */}
             {hasCareerAccess && (
               <Card style={{ display: "flex", padding: "4px" }}>
-              {[
-                { id: "today", label: "Today" },
-                { id: "week", label: "Week" },
-                { id: "this_month", label: "Month" },
-                { id: "all_time", label: "All Time" },
-              ].map((p) => (
-                <motion.button
-                  key={p.id}
-                  onClick={() => setPeriod(p.id as PeriodType)}
-                  style={{
-                    padding: spacing.md,
-                    backgroundColor:
-                      period === p.id ? colors.primary : "transparent",
-                    color:
-                      period === p.id
-                        ? colors.textPrimary
-                        : colors.textSecondary,
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {p.label}
-                </motion.button>
-              ))}
+                {[
+                  { id: "today", label: "Today" },
+                  { id: "week", label: "Week" },
+                  { id: "this_month", label: "Month" },
+                  { id: "all_time", label: "All Time" },
+                ].map((p) => (
+                  <motion.button
+                    key={p.id}
+                    onClick={() => setPeriod(p.id as PeriodType)}
+                    style={{
+                      padding: spacing.md,
+                      backgroundColor:
+                        period === p.id ? colors.primary : "transparent",
+                      color:
+                        period === p.id
+                          ? colors.textPrimary
+                          : colors.textSecondary,
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {p.label}
+                  </motion.button>
+                ))}
               </Card>
             )}
           </div>
@@ -1000,7 +1001,10 @@ const BAR_WIDTH = 600; // Wider visual bar for clarity
  * Team HP Bar component for non-access users in Spaces
  */
 const TeamHPBar: React.FC = () => {
-  const { data: teamHP, isLoading } = useBackendQuery("team-hp", "/api/v1/team-hp");
+  const { data: teamHP, isLoading } = useBackendQuery(
+    "team-hp",
+    "/api/v1/team-hp"
+  );
 
   // Fallback data for when backend is unavailable
   const fallbackData = { hp: 750, total_hp: 1000 };
@@ -1106,17 +1110,17 @@ export const Spaces: React.FC = () => {
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
-    if (!hasCareerAccess && topFourData && Array.isArray(topFourData.users)) {
+    if (topFourData && Array.isArray(topFourData.users)) {
       // Extract usernames from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
       const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
-      
+
       return users.map((user: any, index: number) => ({
         uname: user.username || `User${index + 1}`,
         characterId: characterIds[index] || "samurai",
       }));
     }
-    
+
     // Default fallback data for career associates or when API fails
     return [
       { uname: "u1", characterId: "samurai" },
@@ -1178,10 +1182,7 @@ export const Spaces: React.FC = () => {
           }}
         >
           {/* FourPlayer arena with dynamic players data */}
-          <FourPlayerArena
-            players={playersData as any}
-            bossHp={0}
-          />
+          <FourPlayerArena players={playersData as any} bossHp={0} />
         </Card>
       </main>
     </div>
