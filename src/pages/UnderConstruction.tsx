@@ -1001,10 +1001,7 @@ const BAR_WIDTH = 600; // Wider visual bar for clarity
  * Team HP Bar component for non-access users in Spaces
  */
 const TeamHPBar: React.FC = () => {
-  const { data: teamHP, isLoading } = useBackendQuery(
-    "team-hp",
-    "/api/v1/team-hp"
-  );
+  const { data: teamHP, isLoading } = useBackendQuery("team-hp", "/team-hp");
 
   // Fallback data for when backend is unavailable
   const fallbackData = { hp: 750, total_hp: 1000 };
