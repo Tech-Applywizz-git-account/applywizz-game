@@ -81,6 +81,7 @@ export interface Spacing {
   xl: string;
   '2xl': string;
   '3xl': string;
+  '4xl': string;
 }
 
 export const spacing: Spacing = {
@@ -91,6 +92,7 @@ export const spacing: Spacing = {
   xl: '2rem',
   '2xl': '3rem',
   '3xl': '4rem',
+  '4xl': '6rem',
 };
 
 export interface BorderRadius {

@@ -16,6 +16,7 @@ import "./App.css";
 import { AuthContextProvider } from "./contexts/contexts";
 import { useAuthContext } from "./hooks/hooks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useIsTV } from "./utils/responsive";
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -49,6 +50,7 @@ const App: React.FC = () => {
 
 const PageRoutes = () => {
   const { isAuthenticated } = useAuthContext();
+  const isTV = useIsTV();
   console.log(isAuthenticated);
   const location = useLocation();
 
@@ -56,49 +58,74 @@ const PageRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location}>
         {isAuthenticated ? (
-          <>
-            <Route
-              path="/avatar"
-              element={
-                <PageTransition>
-                  <AvatarSelection />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <PageTransition>
-                  <Dashboard />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <PageTransition>
-                  <Settings />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/leaderboard"
-              element={
-                <PageTransition>
-                  <Leaderboard />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/spaces"
-              element={
-                <PageTransition>
-                  <Spaces />
-                </PageTransition>
-              }
-            />
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-          </>
+          isTV ? (
+            // TV Mode Routes - Only Spaces and Leaderboard
+            <>
+              <Route
+                path="/spaces"
+                element={
+                  <PageTransition>
+                    <Spaces />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <PageTransition>
+                    <Leaderboard />
+                  </PageTransition>
+                }
+              />
+              {/* Redirect all other routes to Spaces in TV mode */}
+              <Route path="*" element={<Navigate to="/spaces" />} />
+            </>
+          ) : (
+            // Normal Mode Routes - All routes available
+            <>
+              <Route
+                path="/avatar"
+                element={
+                  <PageTransition>
+                    <AvatarSelection />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <PageTransition>
+                    <Dashboard />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <PageTransition>
+                    <Settings />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <PageTransition>
+                    <Leaderboard />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/spaces"
+                element={
+                  <PageTransition>
+                    <Spaces />
+                  </PageTransition>
+                }
+              />
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+            </>
+          )
         ) : (
           <>
             <Route

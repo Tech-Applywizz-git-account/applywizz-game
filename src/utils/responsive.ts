@@ -4,6 +4,7 @@ export const breakpoints = {
   tablet: '768px',
   desktop: '1024px',
   largeDesktop: '1280px',
+  tv: '1440px',
 } as const;
 
 // Media query helper
@@ -12,6 +13,7 @@ export const mediaQuery = {
   tablet: `@media (max-width: ${breakpoints.tablet})`,
   desktop: `@media (max-width: ${breakpoints.desktop})`,
   largeDesktop: `@media (max-width: ${breakpoints.largeDesktop})`,
+  tv: `@media (max-width: ${breakpoints.tv})`,
 } as const;
 
 // Responsive styles helper
@@ -68,6 +70,12 @@ export const useIsMobile = (): boolean => {
 export const useIsTablet = (): boolean => {
   if (typeof window === 'undefined') return false;
   return window.innerWidth <= parseInt(breakpoints.tablet);
+};
+
+// Hook to check if screen is TV (large screen mode)
+export const useIsTV = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth >= parseInt(breakpoints.tv);
 };
 
 // Common responsive styles

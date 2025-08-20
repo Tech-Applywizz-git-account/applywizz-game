@@ -11,11 +11,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Sidebar from "../components/Sidebar";
+import TVLayout from "../components/TVLayout";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
+import { useIsTV } from "../utils/responsive";
 
 interface UnderConstructionProps {
   title: string;
@@ -688,11 +690,15 @@ type LeaderboardEntry = individualEntry | teamEntry;
 export const Leaderboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("team");
   const [period, setPeriod] = useState<PeriodType>("today");
+  const isTV = useIsTV();
 
-  const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
+  // In TV mode, force period to "today"
+  const actualPeriod = isTV ? "today" : period;
+
+  const endpoint = `/leaderboard?data=${actualPeriod}&type=${activeTab}`;
 
   const { data, isLoading } = useBackendQuery(
-    ["leaderboard", activeTab, period],
+    ["leaderboard", activeTab, actualPeriod],
     endpoint
   );
   console.log(data);
@@ -723,6 +729,152 @@ export const Leaderboard: React.FC = () => {
 
   console.log(personalProgress);
 
+  // TV mode layout
+  if (isTV) {
+    return (
+      <TVLayout>
+        <div
+          style={{
+            padding: spacing["2xl"],
+            paddingTop: spacing["4xl"], // Extra top padding for TV navbar
+            minHeight: "100vh",
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1
+              style={{
+                fontSize: "3rem",
+                fontWeight: "700",
+                color: colors.textPrimary,
+                marginBottom: spacing["2xl"],
+                fontFamily: fonts.logo,
+                textAlign: "center",
+              }}
+            >
+              Leaderboard
+            </h1>
+
+            {/* Tabs for TV mode */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: spacing["2xl"],
+              }}
+            >
+              <Card style={{ display: "flex", padding: "4px" }}>
+                {[
+                  { id: "team", label: "Teams" },
+                  { id: "individual", label: "Individuals" },
+                ].map((tab) => (
+                  <motion.button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as TabType)}
+                    style={{
+                      padding: spacing.lg,
+                      backgroundColor:
+                        activeTab === tab.id ? colors.primary : "transparent",
+                      color:
+                        activeTab === tab.id
+                          ? colors.textPrimary
+                          : colors.textSecondary,
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      fontSize: "1.1rem",
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {tab.label}
+                  </motion.button>
+                ))}
+              </Card>
+            </div>
+
+            {/* Leaderboard for TV mode */}
+            <Card style={{ padding: 0, maxHeight: "70vh", overflowY: "auto" }}>
+              {isLoading ? (
+                <div style={{ padding: spacing.lg, textAlign: "center" }}>
+                  <div style={{ fontSize: "1.5rem", color: colors.textMuted }}>
+                    Loading...
+                  </div>
+                </div>
+              ) : leaderboardData.length === 0 ? (
+                <div style={{ padding: spacing.lg, textAlign: "center" }}>
+                  <div style={{ fontSize: "1.5rem", color: colors.textMuted }}>
+                    No data available.
+                  </div>
+                </div>
+              ) : (
+                leaderboardData.map((entry, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: spacing["xl"],
+                      borderBottom:
+                        index < leaderboardData.length - 1
+                          ? `1px solid ${colors.surfaceLight}`
+                          : "none",
+                      backgroundColor:
+                        index + 1 <= 3 ? `${colors.primary}10` : "transparent",
+                    }}
+                  >
+                    <div style={{ width: "80px", textAlign: "center" }}>
+                      {index + 1 <= 3 ? (
+                        <span style={{ fontSize: "2rem" }}>
+                          {["🥇", "🥈", "🥉"][index]}
+                        </span>
+                      ) : (
+                        <span
+                          style={{ 
+                            fontWeight: 700, 
+                            color: colors.textSecondary,
+                            fontSize: "1.5rem"
+                          }}
+                        >
+                          #{index + 1}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, marginLeft: spacing.lg }}>
+                      <h3 style={{ 
+                        margin: 0, 
+                        fontSize: "1.5rem",
+                        fontWeight: "600"
+                      }}>
+                        {activeTab === "team"
+                          ? (entry as any).team_name
+                          : (entry as any).username}
+                      </h3>
+                    </div>
+                    <div style={{ 
+                      fontWeight: "700", 
+                      fontSize: "1.3rem",
+                      color: colors.primary 
+                    }}>
+                      {activeTab === "team"
+                        ? (entry as any).team_score
+                        : (entry as any).user_score}{" "}
+                      tasks
+                    </div>
+                  </div>
+                ))
+              )}
+            </Card>
+          </motion.div>
+        </div>
+      </TVLayout>
+    );
+  }
+
+  // Normal mode layout
   return (
     <div
       style={{
@@ -987,7 +1139,60 @@ export const Leaderboard: React.FC = () => {
 export const Spaces: React.FC = () => {
   const hasDesktopSidebar =
     typeof window !== "undefined" && window.innerWidth >= 1024;
+  const isTV = useIsTV();
 
+  // TV mode layout
+  if (isTV) {
+    return (
+      <TVLayout>
+        <div
+          style={{
+            minHeight: "100vh",
+            backgroundColor: colors.background,
+            fontFamily: fonts.body,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <main
+            style={{
+              flex: 1,
+              padding: 0, // no inner padding – let the game go full-bleed
+              display: "flex",
+              minHeight: "100vh",
+            }}
+          >
+            <Card
+              fullBleed
+              hover={false}
+              // keep the rounded container, hide overflow so the canvas clips cleanly
+              style={{
+                width: "100%",
+                height: "100vh",
+                border: "none",
+                borderRadius: 0, // No border radius for TV mode for full screen experience
+                overflow: "hidden",
+                background: "transparent",
+              }}
+            >
+              {/* FourPlayer needs 4 users (username + characterId) */}
+              <FourPlayerArena
+                players={[
+                  { uname: "u1", characterId: "samurai" },
+                  { uname: "u2", characterId: "shinobi" },
+                  { uname: "u3", characterId: "samurai2" },
+                  { uname: "u4", characterId: "samuraiArcher" },
+                ]}
+                bossHp={0}
+              />
+            </Card>
+          </main>
+        </div>
+      </TVLayout>
+    );
+  }
+
+  // Normal mode layout
   return (
     <div
       style={{
