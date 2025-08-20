@@ -39,12 +39,12 @@ const CHAR_FOLDER: Record<CharacterId, string> = {
 /* ---------------------- Config ---------------------- */
 const CONFIG = {
   thanos: {
-    scale: .95,
-    yPosition: 370, // in design coords
+    scale: 0.75, // was 0.95
+    yPosition: 470, // was 370
     hitEffect: { scaleIncrease: 0.08, tintColor: 0xff0000, duration: 60 },
   },
   attacker: {
-    scale: 2,
+    scale: 1.6, // was 2
     attackOffset: 150,
     lightDashDuration: 500,
     animation: { duration: 900, ease: "Power1" as const },
@@ -57,7 +57,7 @@ const CONFIG = {
     strokeThickness: 8,
   },
   platforms: { width: 220, height: 60 },
-  groundOffsetFromBottom: 270, // in design coords
+  groundOffsetFromBottom: 190, // was 270 → lowers everyone
 };
 
 type AttackerRecord = {
@@ -85,7 +85,7 @@ class ArenaScene extends Phaser.Scene {
   private bgNear!: Phaser.GameObjects.TileSprite;
 
   // boss + UI
-  private thanos!: Phaser.GameObjects.Image;
+  // private thanos!: Phaser.GameObjects.Image
   private defeatText!: Phaser.GameObjects.Text;
 
   // attackers
@@ -166,7 +166,13 @@ class ArenaScene extends Phaser.Scene {
       .tileSprite(width / 2, height / 2, width, height, "background_far")
       .setScrollFactor(0);
     this.bgNear = this.add
-      .tileSprite(width / 2, height / 2 - 80 , width * 1.5, height * 1.5, "background")
+      .tileSprite(
+        width / 2,
+        height / 2 - 20,
+        width * 1.5,
+        height * 1.5,
+        "background"
+      )
       .setScrollFactor(0);
 
     // 🔒 Lock camera: eliminate any zoom drift/wobble during shakes
@@ -322,7 +328,7 @@ class ArenaScene extends Phaser.Scene {
     const padX = 160;
     const leftX = padX;
     const rightX = width - padX;
-    const platformYTop = 220;
+    const platformYTop = 300;
 
     const centers: Record<SlotId, { x: number; y: number }> = {
       TL: { x: leftX, y: platformYTop },
@@ -340,7 +346,7 @@ class ArenaScene extends Phaser.Scene {
       if (slot === "TL" || slot === "TR") {
         platformImg = this.add
           .image(c.x, c.y, "platform")
-          .setOrigin(0.7, -1)
+          .setOrigin(0.7, -0.55)
           .setDepth(1);
         platformImg.setScale(
           CONFIG.platforms.width / platformImg.width,
@@ -614,7 +620,10 @@ class ArenaScene extends Phaser.Scene {
 }
 
 /* ---------------------- React wrapper ---------------------- */
-const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({ players, bossHp }) => {
+const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
+  players,
+  bossHp,
+}) => {
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<ArenaScene | null>(null);
@@ -656,7 +665,9 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({ players, bossHp }) =>
 
     // start with players and initial hp
     phaserGameRef.current.scene.start("ArenaScene", { players, bossHp });
-    sceneRef.current = phaserGameRef.current.scene.getScene("ArenaScene") as ArenaScene;
+    sceneRef.current = phaserGameRef.current.scene.getScene(
+      "ArenaScene"
+    ) as ArenaScene;
 
     // keep canvas sized with window; Scale.FIT handles aspect safely
     const onResize = () => {
@@ -678,7 +689,7 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({ players, bossHp }) =>
   }, [bossHp]);
 
   return (
-    <Card fullBleed hover style={{ borderRadius: 16, overflow: "hidden" }}>
+    <Card fullBleed>
       <div ref={gameRef} id="phaser-thanos-container" />
     </Card>
   );
