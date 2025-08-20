@@ -16,6 +16,7 @@ import "./App.css";
 import { AuthContextProvider } from "./contexts/contexts";
 import { useAuthContext } from "./hooks/hooks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { isCareerAssociate } from "./utils/roleUtils";
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -51,36 +52,16 @@ const PageRoutes = () => {
   const { isAuthenticated } = useAuthContext();
   console.log(isAuthenticated);
   const location = useLocation();
+  
+  // Check if user has career associate access
+  const hasCareerAccess = isCareerAssociate();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location}>
         {isAuthenticated ? (
           <>
-            <Route
-              path="/avatar"
-              element={
-                <PageTransition>
-                  <AvatarSelection />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <PageTransition>
-                  <Dashboard />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <PageTransition>
-                  <Settings />
-                </PageTransition>
-              }
-            />
+            {/* Routes available to all authenticated users */}
             <Route
               path="/leaderboard"
               element={
@@ -97,7 +78,46 @@ const PageRoutes = () => {
                 </PageTransition>
               }
             />
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            
+            {/* Routes only available to career associates */}
+            {hasCareerAccess ? (
+              <>
+                <Route
+                  path="/avatar"
+                  element={
+                    <PageTransition>
+                      <AvatarSelection />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <PageTransition>
+                      <Dashboard />
+                    </PageTransition>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <PageTransition>
+                      <Settings />
+                    </PageTransition>
+                  }
+                />
+                <Route path="/" element={<Navigate to="/dashboard" />} />
+              </>
+            ) : (
+              <>
+                {/* Non-career associates redirect to spaces by default */}
+                <Route path="/" element={<Navigate to="/spaces" />} />
+                {/* Redirect any other routes to spaces for non-access users */}
+                <Route path="/dashboard" element={<Navigate to="/spaces" />} />
+                <Route path="/avatar" element={<Navigate to="/spaces" />} />
+                <Route path="/settings" element={<Navigate to="/spaces" />} />
+              </>
+            )}
           </>
         ) : (
           <>
