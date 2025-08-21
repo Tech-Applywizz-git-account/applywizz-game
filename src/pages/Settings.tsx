@@ -52,7 +52,8 @@ const Settings: React.FC = () => {
     setIsAvatarSelectionOpen(false);
   };
 
-  // Fetch user graph data from API
+  // Fetch user graph data from API - only for career associates
+  const chartQueryEnabled = isCareerAssociate();
   const { data: chartData, isLoading: chartLoading } = useBackendQuery(
     ["user-graph", selectedTimeRange],
     `/user-graph?data=${selectedTimeRange}`
@@ -77,52 +78,18 @@ const Settings: React.FC = () => {
   ];
 
   const renderAvatar = () => {
-    if (selectedAvatar) {
-      return (
-        <Avatar
-          id={selectedAvatar.id}
-          size={120}
-          showStatus={true}
-          style={{
-            boxShadow: `0 8px 32px rgba(139, 92, 246, 0.4)`,
-          }}
-        />
-      );
-    }
-
-    // Default fallback avatar (the "MZ circle")
+    // Always use the display avatar (stored or default)
+    const displayAvatar = getDisplayAvatar();
+    
     return (
-      <div
+      <Avatar
+        id={displayAvatar.id}
+        size={120}
+        showStatus={true}
         style={{
-          width: "120px",
-          height: "120px",
-          backgroundColor: colors.primary,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "2.5rem",
-          fontWeight: "700",
-          color: colors.textPrimary,
-          position: "relative",
-          boxShadow: `0 8px 32px ${colors.primary}40`,
+          boxShadow: `0 8px 32px rgba(139, 92, 246, 0.4)`,
         }}
-      >
-        MZ
-        {/* Status indicator */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "8px",
-            right: "8px",
-            width: "24px",
-            height: "24px",
-            backgroundColor: colors.success,
-            borderRadius: "50%",
-            border: `3px solid ${colors.surface}`,
-          }}
-        />
-      </div>
+      />
     );
   };
 
