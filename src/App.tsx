@@ -110,12 +110,20 @@ const PageRoutes = () => {
               </>
             ) : (
               <>
-                {/* Non-career associates redirect to spaces by default */}
+                {/* Non-career associates have limited access */}
                 <Route path="/" element={<Navigate to="/spaces" />} />
-                {/* Redirect any other routes to spaces for non-access users */}
+                {/* Allow access to settings for avatar configuration */}
+                <Route
+                  path="/settings"
+                  element={
+                    <PageTransition>
+                      <Settings />
+                    </PageTransition>
+                  }
+                />
+                {/* Redirect other restricted routes to spaces for non-access users */}
                 <Route path="/dashboard" element={<Navigate to="/spaces" />} />
                 <Route path="/avatar" element={<Navigate to="/spaces" />} />
-                <Route path="/settings" element={<Navigate to="/spaces" />} />
               </>
             )}
           </>

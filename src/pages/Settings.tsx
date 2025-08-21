@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, Upload, Palette } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -11,11 +11,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Sidebar from "../components/Sidebar";
-import Avatar, { AvatarData } from "../components/Avatar";
+import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar";
 import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
+import { getStoredAvatar, storeAvatar, getDisplayAvatar } from "../utils/avatarUtils";
+import { CareerAssociateOnly, NonCareerAssociateOnly } from "../components/RoleGuards";
 import {
   RoleFallbackUI,
   ErrorUI,
@@ -27,30 +30,30 @@ import { useNavigate } from "react-router-dom";
 const Settings: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>("week");
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarData | null>(null);
+  const [isAvatarSelectionOpen, setIsAvatarSelectionOpen] = useState<boolean>(false);
   const navigator = useNavigate();
 
   const { logout } = useAuthContext();
   const role = localStorage.getItem("role");
 
-  // Load avatar from localStorage on component mount
+  // Load avatar from localStorage using new utility
   useEffect(() => {
-    const storedAvatar = localStorage.getItem("avatar");
+    const storedAvatar = getStoredAvatar();
     if (storedAvatar) {
-      try {
-        const parsedAvatar = JSON.parse(storedAvatar);
-        // Handle both old format (with color/pattern) and new format (just id)
-        if (typeof parsedAvatar === "object" && parsedAvatar.id) {
-          setSelectedAvatar({ id: parsedAvatar.id });
-        } else if (typeof parsedAvatar === "number") {
-          setSelectedAvatar({ id: parsedAvatar });
-        }
-      } catch (error) {
-        console.error("Failed to parse stored avatar:", error);
-      }
+      setSelectedAvatar(storedAvatar);
     }
   }, []);
 
-  // Fetch user graph data from API
+  // Handle avatar selection for non-career associates
+  const handleAvatarSelect = (avatarId: number) => {
+    const newAvatar: AvatarData = { id: avatarId };
+    setSelectedAvatar(newAvatar);
+    storeAvatar(newAvatar);
+    setIsAvatarSelectionOpen(false);
+  };
+
+  // Fetch user graph data from API - only for career associates
+  const chartQueryEnabled = isCareerAssociate();
   const { data: chartData, isLoading: chartLoading } = useBackendQuery(
     ["user-graph", selectedTimeRange],
     `/user-graph?data=${selectedTimeRange}`
@@ -75,52 +78,18 @@ const Settings: React.FC = () => {
   ];
 
   const renderAvatar = () => {
-    if (selectedAvatar) {
-      return (
-        <Avatar
-          id={selectedAvatar.id}
-          size={120}
-          showStatus={true}
-          style={{
-            boxShadow: `0 8px 32px rgba(139, 92, 246, 0.4)`,
-          }}
-        />
-      );
-    }
-
-    // Default fallback avatar (the "MZ circle")
+    // Always use the display avatar (stored or default)
+    const displayAvatar = getDisplayAvatar();
+    
     return (
-      <div
+      <Avatar
+        id={displayAvatar.id}
+        size={120}
+        showStatus={true}
         style={{
-          width: "120px",
-          height: "120px",
-          backgroundColor: colors.primary,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "2.5rem",
-          fontWeight: "700",
-          color: colors.textPrimary,
-          position: "relative",
-          boxShadow: `0 8px 32px ${colors.primary}40`,
+          boxShadow: `0 8px 32px rgba(139, 92, 246, 0.4)`,
         }}
-      >
-        MZ
-        {/* Status indicator */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "8px",
-            right: "8px",
-            width: "24px",
-            height: "24px",
-            backgroundColor: colors.success,
-            borderRadius: "50%",
-            border: `3px solid ${colors.surface}`,
-          }}
-        />
-      </div>
+      />
     );
   };
 
@@ -234,6 +203,125 @@ const Settings: React.FC = () => {
               </motion.div>
             )}
           </Card>
+
+          {/* Avatar Selection Section - For Non-Career Associates */}
+          <NonCareerAssociateOnly>
+            <Card
+              style={{
+                padding: spacing["2xl"],
+                marginBottom: spacing.xl,
+                background: `linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)`,
+                border: `1px solid rgba(139, 92, 246, 0.2)`,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: spacing.lg,
+                  marginBottom: spacing.lg,
+                }}
+              >
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    backgroundColor: colors.primary,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Palette size={24} style={{ color: colors.textPrimary }} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: "1.25rem",
+                      fontWeight: "600",
+                      color: colors.textPrimary,
+                      margin: 0,
+                      marginBottom: spacing.xs,
+                    }}
+                  >
+                    Customize Your Avatar
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "0.9rem",
+                      color: colors.textSecondary,
+                      margin: 0,
+                    }}
+                  >
+                    Choose an avatar to represent you in the game
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ textAlign: "center" }}>
+                <Button
+                  onClick={() => setIsAvatarSelectionOpen(!isAvatarSelectionOpen)}
+                  style={{
+                    backgroundColor: colors.primary,
+                    color: colors.textPrimary,
+                    padding: `${spacing.md} ${spacing.xl}`,
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    border: "none",
+                    cursor: "pointer",
+                    marginBottom: isAvatarSelectionOpen ? spacing.lg : 0,
+                  }}
+                >
+                  {isAvatarSelectionOpen ? "Hide Avatars" : "Choose Avatar"}
+                </Button>
+
+                {/* Avatar Selection Grid */}
+                {isAvatarSelectionOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))",
+                      gap: spacing.md,
+                      marginTop: spacing.lg,
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                      padding: spacing.sm,
+                      backgroundColor: `${colors.surface}40`,
+                      borderRadius: "8px",
+                    }}
+                  >
+                    {getAvailableAvatarIds().map((avatarId) => (
+                      <motion.div
+                        key={avatarId}
+                        style={{ textAlign: "center" }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Avatar
+                          id={avatarId}
+                          size={64}
+                          isSelected={selectedAvatar?.id === avatarId}
+                          onClick={() => handleAvatarSelect(avatarId)}
+                          style={{
+                            cursor: "pointer",
+                            border: selectedAvatar?.id === avatarId 
+                              ? `3px solid ${colors.primary}` 
+                              : `3px solid transparent`,
+                            transition: "border-color 0.2s ease",
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
+            </Card>
+          </NonCareerAssociateOnly>
+
           {/* Avatar Info Section - Show when custom avatar is selected */}
           {selectedAvatar && (
             <Card
