@@ -12,12 +12,14 @@ import {
 } from "recharts";
 import Sidebar from "../components/Sidebar";
 import FloatingNavbar from "../components/FloatingNavbar";
+import Avatar from "../components/Avatar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
+import { getDisplayAvatar } from "../utils/avatarUtils";
 
 interface UnderConstructionProps {
   title: string;
@@ -244,37 +246,14 @@ export const Settings: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div
+              <Avatar
+                id={getDisplayAvatar().id}
+                size={120}
+                showStatus={true}
                 style={{
-                  width: "120px",
-                  height: "120px",
-                  backgroundColor: colors.primary,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "2.5rem",
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                  position: "relative",
                   boxShadow: `0 8px 32px ${colors.primary}40`,
                 }}
-              >
-                MZ
-                {/* Status indicator */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "8px",
-                    right: "8px",
-                    width: "24px",
-                    height: "24px",
-                    backgroundColor: colors.success,
-                    borderRadius: "50%",
-                    border: `3px solid ${colors.surface}`,
-                  }}
-                />
-              </div>
+              />
             </motion.div>
 
             {/* User Info */}
@@ -782,22 +761,13 @@ export const Leaderboard: React.FC = () => {
                   gap: spacing.sm,
                 }}
               >
-                <div
+                <Avatar
+                  id={getDisplayAvatar().id}
+                  size={32}
                   style={{
-                    width: "32px",
-                    height: "32px",
-                    backgroundColor: colors.primary,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.9rem",
-                    fontWeight: "700",
-                    color: colors.textPrimary,
+                    border: `2px solid ${colors.primary}`,
                   }}
-                >
-                  JD
-                </div>
+                />
                 My Progress
               </h2>
 
@@ -1113,8 +1083,12 @@ export const Spaces: React.FC = () => {
     typeof window !== "undefined" && window.innerWidth >= 1024;
   const hasCareerAccess = isCareerAssociate();
 
-  // Fetch top-four data for non-access users
-  const { data: topFourData } = useBackendQuery("top-four", "/top-four");
+  // Fetch top-four data for non-access users - properly handle loading state
+  const { 
+    data: topFourData, 
+    isLoading: topFourLoading, 
+    error: topFourError 
+  } = useBackendQuery("top-four", "/top-four");
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
@@ -1138,7 +1112,9 @@ export const Spaces: React.FC = () => {
     ];
   };
 
-  const playersData = getPlayersData();
+  // Only get players data if we have loaded the top-four data or if user is career associate
+  const shouldLoadContent = hasCareerAccess || !topFourLoading;
+  const playersData = shouldLoadContent ? getPlayersData() : [];
 
   return (
     <div
@@ -1186,10 +1162,25 @@ export const Spaces: React.FC = () => {
             borderRadius: 16,
             overflow: "hidden",
             background: "transparent",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {/* FourPlayer arena with dynamic players data */}
-          <FourPlayerArena players={playersData as any} bossHp={hp} />
+          {/* Show loading state for non-career associates while top-four data loads */}
+          {!hasCareerAccess && topFourLoading ? (
+            <div style={{
+              color: colors.textPrimary,
+              fontSize: "1.2rem",
+              fontWeight: "600",
+              textAlign: "center",
+            }}>
+              Loading arena...
+            </div>
+          ) : (
+            /* FourPlayer arena with dynamic players data - only render when data is ready */
+            <FourPlayerArena players={playersData as any} bossHp={hp} />
+          )}
         </Card>
       </main>
     </div>
