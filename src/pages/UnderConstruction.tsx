@@ -723,10 +723,7 @@ export const Leaderboard: React.FC = () => {
     name: (data as any)?.personal_progress?.name,
     score: (data as any)?.personal_progress?.score,
     completedTasks: (data as any)?.personal_progress?.score,
-    totalTasks: 100,
   };
-
-  console.log(personalProgress);
 
   return (
     <div
@@ -841,19 +838,16 @@ export const Leaderboard: React.FC = () => {
                         fontWeight: "700",
                       }}
                     >
-                      {personalProgress?.completedTasks ?? "NA"}/
-                      {personalProgress?.totalTasks ?? "NA"}{" "}
+                      {personalProgress?.completedTasks ?? "NA"}
                     </div>
                     <div>Tasks Completed</div>
+
                     <div style={{ color: colors.textMuted }}>
-                      {personalProgress?.completedTasks != null &&
-                      personalProgress?.totalTasks != null
+                      {personalProgress?.completedTasks != null
                         ? `${Math.round(
-                            (personalProgress.completedTasks /
-                              personalProgress.totalTasks) *
-                              100
-                          )}% completion`
-                        : "NA"}{" "}
+                            personalProgress.completedTasks
+                          )} completed`
+                        : "NA"}
                     </div>
                   </div>
                 </Card>
