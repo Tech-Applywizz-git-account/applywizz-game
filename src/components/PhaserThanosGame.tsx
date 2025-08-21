@@ -2,6 +2,10 @@ import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./ui/card";
 
+interface ThanosGameProps {
+  isThanosDead: boolean;
+}
+
 interface GameConfig {
   thanos: {
     scale: number;
@@ -82,9 +86,18 @@ class ArenaScene extends Phaser.Scene {
   private deathSequenceStarted: boolean = false;
   private defeatText!: Phaser.GameObjects.Text;
   private bg!: Phaser.GameObjects.Image;
+  private bg2!: Phaser.GameObjects.Image;
 
   constructor() {
     super("ArenaScene");
+  }
+
+  /**
+   * Initialize the scene with Thanos death state
+   * @param data - Scene initialization data containing isThanosDead state
+   */
+  init(data: { isThanosDead: boolean }): void {
+    this.isThanosDead = data.isThanosDead || false;
   }
 
   preload(): void {
@@ -138,7 +151,7 @@ class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
 
     const padX = 0; // horizontal margin
-    const padY = 75; // vertical lift — increase to move Thanos up
+    const padY = 70; // vertical lift — increase to move Thanos up
 
     // natural image size
     const tex = this.textures
@@ -159,10 +172,9 @@ class ArenaScene extends Phaser.Scene {
     this.thanos.setOrigin(1, 1);
     this.thanos.setPosition(cam.width - padX, cam.height - padY);
   }
-
   private getGroundY(): number {
     // tune this single number to match the background's stone top line
-    return this.cameras.main.height - 225;
+    return this.cameras.main.height - 220;
   }
 
   private targetXInFrontOfThanos(gap = 30): number {
@@ -177,16 +189,22 @@ class ArenaScene extends Phaser.Scene {
     const inset = (CONFIG.thanos as any).leftInsetPx * scaleX; // scale the visual inset
     const thanosLeftVisual = this.thanos.getBounds().left + inset;
     const halfAttacker = this.attacker.displayWidth * this.attacker.originX; // 0.5 by default
-    // base stop: attacker's RIGHT edge is gap before visual left edge
+    // base stop: attacker's RIGHT edge is `gap` before visual left edge
     const base = thanosLeftVisual - gap - halfAttacker; // bump the fighter a bit further TOWARD Thanos (positive values move right)
     const bumpTowardThanosPx = 12; // tweak: try 8–18 until it looks perfect
     return Math.round(base + bumpTowardThanosPx);
   }
   create(): void {
     const { width, height } = this.cameras.main;
+
     this.bg = this.add.image(0, 0, "bg").setOrigin(0, 0).setDepth(0);
-    this.bg.setDisplaySize(width, height); // fill canvas
-    this.bg.setScrollFactor(0);
+    this.bg2 = this.add.image(width, 0, "bg").setOrigin(0, 0).setDepth(0);
+
+    const w = Math.ceil(width);
+    const h = Math.ceil(height);
+
+    this.bg.setDisplaySize(w, h).setScrollFactor(0);
+    this.bg2.setDisplaySize(w, h).setScrollFactor(0);
 
     this.createAnimations();
 
@@ -220,8 +238,6 @@ class ArenaScene extends Phaser.Scene {
     this.startBattleSequence();
 
     this.scale.on("resize", this.resize, this);
-
-    this.game.events.emit("arena-ready", this);
   }
 
   /**
@@ -244,27 +260,37 @@ class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /*
+  update(_t: number, dt: number): void {
+    const w = this.cameras.main.width;
+    const speed = w / 15_000; // same as your 15000ms tween (~px/ms). Tweak as you like.
+
+    // move both left at the same rate
+    const dx = speed * dt;
+    this.bg.x -= dx;
+    this.bg2.x -= dx;
+
+    // wrap each one when fully off-screen
+    if (this.bg.x <= -w) this.bg.x = this.bg2.x + w;
+    if (this.bg2.x <= -w) this.bg2.x = this.bg.x + w;
+  }
+
+  /**
    * Update the death state and handle transitions
    * @param isThanosDead - New death state
    */
+  updateDeathState(isThanosDead: boolean): void {
+    if (this.isThanosDead !== isThanosDead) {
+      this.isThanosDead = isThanosDead;
 
-  triggerThanosDeath(): void {
-    if (this.isBusy) {
-      return;
+      if (isThanosDead && !this.deathSequenceStarted) {
+        // Stop light attacks and start death sequence
+        if (this.lightAttackTimer) {
+          this.lightAttackTimer.destroy();
+        }
+        this.deathSequenceStarted = true;
+        this.performHeavyAttack();
+      }
     }
-
-    // Cancel any ongoing light attacks
-    if (this.lightAttackTimer) {
-      this.lightAttackTimer.destroy();
-      this.lightAttackTimer = undefined;
-    }
-
-    // Set flags to prevent other actions
-    this.deathSequenceStarted = true;
-    this.isBusy = true;
-
-    this.performHeavyAttack();
   }
 
   createAnimations(): void {
@@ -333,7 +359,7 @@ class ArenaScene extends Phaser.Scene {
    * Perform a heavy attack - attacker dashes in, kills Thanos, and remains
    */
   private performHeavyAttack(): void {
-    if (this.isBusy && !this.deathSequenceStarted) return;
+    if (this.isThanosDead || this.isBusy) return;
     this.isBusy = true;
 
     const originalX = this.attacker.x;
@@ -377,7 +403,6 @@ class ArenaScene extends Phaser.Scene {
             // Keep tint for 150ms, then clear & kill
             this.time.delayedCall(150, () => {
               this.thanos.clearTint();
-
               this.killThanosLikeMario(); // start death animation
             });
           });
@@ -425,6 +450,7 @@ class ArenaScene extends Phaser.Scene {
   }
 
   private killThanosLikeMario(): void {
+    if (this.isThanosDead) return;
     this.isThanosDead = true;
     this.thanos.clearTint();
 
@@ -483,11 +509,17 @@ class ArenaScene extends Phaser.Scene {
   private resize(gameSize: Phaser.Structs.Size): void {
     const { width, height } = gameSize;
     this.cameras.resize(width, height);
-
-    if (this.bg) {
+    if (this.bg && this.bg2) {
       this.bg.setDisplaySize(width, height);
-    }
+      this.bg2.setDisplaySize(width, height);
 
+      // place side-by-side with no gap
+      // keep whichever is currently leftmost as-is, put the other right after it
+      const leftmost = this.bg.x <= this.bg2.x ? this.bg : this.bg2;
+      const rightOne = leftmost === this.bg ? this.bg2 : this.bg;
+      leftmost.setPosition(Math.min(leftmost.x, 0), 0);
+      rightOne.setPosition(leftmost.x + width, 0);
+    }
     // fit keeps Thanos fully visible at bottom-right
     this.fitThanosToCamera();
 
@@ -504,17 +536,14 @@ class ArenaScene extends Phaser.Scene {
   }
 }
 
-interface ThanosGameProps {
-  isThanosDead: boolean;
-}
-
 const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
-  const gameRef = useRef<Phaser.Game | null>(null);
-  const sceneReadyRef = useRef(false);
-  const queuedDeathRef = useRef(false);
+  const gameRef = useRef<HTMLDivElement>(null);
+  const phaserGameRef = useRef<Phaser.Game | null>(null);
+  const sceneRef = useRef<ArenaScene | null>(null);
 
   useEffect(() => {
-    if (gameRef.current) return;
+    if (!gameRef.current) return;
+    if (phaserGameRef.current) return;
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
@@ -525,52 +554,45 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
         height: "100%",
       },
       backgroundColor: "transparent",
-      parent: "phaser-thanos-container",
+      parent: gameRef.current,
       physics: {
         default: "arcade",
-        arcade: { debug: false },
+        arcade: {
+          debug: false,
+        },
       },
       scene: [ArenaScene],
     };
 
-    gameRef.current = new Phaser.Game(config);
+    phaserGameRef.current = new Phaser.Game(config);
 
-    gameRef.current.events.on("arena-ready", (scene: ArenaScene) => {
-      sceneReadyRef.current = true;
-      if (queuedDeathRef.current) {
-        scene.triggerThanosDeath();
-        queuedDeathRef.current = false;
-      }
-    });
-    // Pass initial state to scene
+    // Store reference to the scene for later updates
+    phaserGameRef.current.scene.start("ArenaScene", { isThanosDead });
+    sceneRef.current = phaserGameRef.current.scene.getScene(
+      "ArenaScene"
+    ) as ArenaScene;
+
     return () => {
-      gameRef.current?.destroy(true);
-      gameRef.current = null;
-      sceneReadyRef.current = false;
+      if (phaserGameRef.current) {
+        phaserGameRef.current.destroy(true);
+        phaserGameRef.current = null;
+        sceneRef.current = null;
+      }
     };
-  }, []); // Update scene when death state changes
+  }, []);
+
+  // Update scene when death state changes
   useEffect(() => {
-    if (isThanosDead) {
-      // Changed condition
-
-      if (!gameRef.current) {
-        queuedDeathRef.current = true;
-        return;
-      }
-
-      const scene = gameRef.current.scene.getScene("ArenaScene") as ArenaScene;
-      if (scene && sceneReadyRef.current) {
-        scene.triggerThanosDeath();
-      } else {
-        queuedDeathRef.current = true;
-      }
+    if (sceneRef.current) {
+      sceneRef.current.updateDeathState(isThanosDead);
     }
   }, [isThanosDead]);
+
   return (
     <Card
       style={{
         padding: "0",
-        overflow: "hidden",
+        overflow: "visible",
         border: "2px solid rgba(99, 102, 241, 0.2)",
         boxShadow: "0 10px 30px rgba(99, 102, 241, 0.1)",
         background:
@@ -578,6 +600,7 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
       }}
     >
       <div
+        ref={gameRef}
         id="phaser-thanos-container"
         style={{
           width: window.innerWidth >= 1024 ? "calc(100vw - 280px)" : "100vw",
