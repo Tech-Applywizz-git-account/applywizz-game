@@ -20,7 +20,7 @@ export interface PlayerSpec {
 
 interface FourPlayerArenaProps {
   players: [PlayerSpec, PlayerSpec, PlayerSpec, PlayerSpec];
-  bossHp: number;
+  bossHp: number; // 0..100
 }
 
 const DESIGN_W = 1280;
@@ -39,12 +39,12 @@ const CHAR_FOLDER: Record<CharacterId, string> = {
 /* ---------------------- Config ---------------------- */
 const CONFIG = {
   thanos: {
-    scale: 0.75, // was 0.95
-    yPosition: 470, // was 370
+    scale: 0.75,
+    yPosition: 470,
     hitEffect: { scaleIncrease: 0.08, tintColor: 0xff0000, duration: 60 },
   },
   attacker: {
-    scale: 1.6, // was 2
+    scale: 1.6,
     attackOffset: 150,
     lightDashDuration: 500,
     animation: { duration: 900, ease: "Power1" as const },
@@ -57,7 +57,7 @@ const CONFIG = {
     strokeThickness: 8,
   },
   platforms: { width: 220, height: 60 },
-  groundOffsetFromBottom: 190, // was 270 → lowers everyone
+  groundOffsetFromBottom: 190,
 };
 
 type AttackerRecord = {
@@ -77,24 +77,30 @@ const ORDER_CLOCKWISE: SlotId[] = ["TL", "TR", "BR", "BL"];
 /* ---------------------- Scene ---------------------- */
 class ArenaScene extends Phaser.Scene {
   private players!: [PlayerSpec, PlayerSpec, PlayerSpec, PlayerSpec];
-  private currentHp = 0;
-  private lastHp = 0;
+  private currentHp = 100;
+  private lastHp = 100;
 
   // bg
   private bgFar!: Phaser.GameObjects.TileSprite;
   private bgNear!: Phaser.GameObjects.TileSprite;
 
   // boss + UI
-  // private thanos!: Phaser.GameObjects.Image
+  private thanos!: Phaser.GameObjects.Image;
   private defeatText!: Phaser.GameObjects.Text;
 
   // attackers
   private A: Record<SlotId, AttackerRecord> = {} as any;
 
-  // loop control
+  // control
   private loopIndex = 0;
   private loopRunning = false;
-  private pendingHeavy = false; // set when HP drops
+  private pendingHeavy = false;
+  private isThanosDead = false;
+  private finalAssaultStarted = false;
+
+  // base display size of normal thanos so swaps keep identical size
+  private thanosBaseW = 0;
+  private thanosBaseH = 0;
 
   constructor() {
     super("ArenaScene");
@@ -102,17 +108,34 @@ class ArenaScene extends Phaser.Scene {
 
   init(data: { players: FourPlayerArenaProps["players"]; bossHp: number }) {
     this.players = data.players;
-    this.currentHp = data.bossHp ?? 0;
-    this.lastHp = this.currentHp;
+
+    // Use incoming bossHp (clamped 0..100)
+    const hpFromProps =
+      typeof data.bossHp === "number" && !Number.isNaN(data.bossHp)
+        ? Math.max(0, Math.min(100, data.bossHp))
+        : 100;
+
+    this.currentHp = hpFromProps;
+    this.lastHp = hpFromProps;
+    this.isThanosDead = false;
+    this.finalAssaultStarted = false;
+    this.loopIndex = 0;
+    this.loopRunning = false;
+    this.pendingHeavy = false;
   }
 
-  // expose to React
+  /** Called from React when bossHp prop changes */
   public updateBossHp(newHp: number) {
-    if (newHp < this.currentHp) {
-      this.pendingHeavy = true;
+    if (this.isThanosDead || this.finalAssaultStarted) return;
+    const clamped = Math.max(0, Math.min(100, Number(newHp) || 0));
+
+    if (clamped < this.currentHp) {
+      this.pendingHeavy = true; // cue heavy from TL on next tick
     }
     this.lastHp = this.currentHp;
-    this.currentHp = newHp;
+    this.currentHp = clamped;
+
+    if (this.currentHp <= 0) this.killThanos(); // orchestration (final heavies -> death)
   }
 
   preload() {
@@ -120,7 +143,11 @@ class ArenaScene extends Phaser.Scene {
     this.load.image("background", "assets/dark_background.png");
     this.load.image("background_far", "assets/dark_background_far.png");
 
+    // boss images
     this.load.image("thanos", "assets/thanos.png");
+    this.load.image("thanos_hit", "assets/thanos-gettinghit.png");
+    this.load.image("thanos_dead", "assets/thanos-dead.png");
+
     this.load.image("platform", "assets/platform.png");
 
     this.load.audio("sfx_slash", "assets/Sounds/slash.mp3");
@@ -157,11 +184,10 @@ class ArenaScene extends Phaser.Scene {
   }
 
   create() {
-    // Author everything in DESIGN_W/DESIGN_H space
     const width = DESIGN_W;
     const height = DESIGN_H;
 
-    // parallax bgs (smaller so shake won't feel like zoom)
+    // parallax bgs
     this.bgFar = this.add
       .tileSprite(width / 2, height / 2, width, height, "background_far")
       .setScrollFactor(0);
@@ -175,7 +201,7 @@ class ArenaScene extends Phaser.Scene {
       )
       .setScrollFactor(0);
 
-    // 🔒 Lock camera: eliminate any zoom drift/wobble during shakes
+    // camera lock
     const cam = this.cameras.main;
     cam.setBounds(0, 0, DESIGN_W, DESIGN_H);
     cam.setScroll(0, 0);
@@ -189,6 +215,10 @@ class ArenaScene extends Phaser.Scene {
       .image(width / 2 - 50, CONFIG.thanos.yPosition, "thanos")
       .setScale(CONFIG.thanos.scale)
       .setDepth(2);
+
+    // record base display size after scale so all future textures match it
+    this.thanosBaseW = this.thanos.displayWidth;
+    this.thanosBaseH = this.thanos.displayHeight;
 
     // attackers + platforms
     this.buildAttackers();
@@ -206,7 +236,13 @@ class ArenaScene extends Phaser.Scene {
       .setDepth(100)
       .setAlpha(0);
 
-    // start clockwise loop
+    // If HP already 0 on mount, run final assault then death (after sprites exist)
+    if (this.currentHp <= 0) {
+      this.time.delayedCall(0, () => this.killThanos());
+      return; // don't start loop
+    }
+
+    // start loop
     this.loopRunning = true;
     this.runClockwiseLoop();
   }
@@ -221,8 +257,7 @@ class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /* ---------------------- Helpers (use design coords) ---------------------- */
-
+  /* ---------------------- Helpers ---------------------- */
   private groundY() {
     return DESIGN_H - CONFIG.groundOffsetFromBottom;
   }
@@ -234,14 +269,13 @@ class ArenaScene extends Phaser.Scene {
   }
 
   private jumpUpToPlatform(A: AttackerRecord, after?: () => void) {
-    if (!A.platformImg) return after?.(); // BL/BR safety
+    if (!A.platformImg) return after?.();
 
     const sprite = A.sprite;
     const startY = sprite.y;
     const landX = A.platformHome.x;
     const landY = A.platformHome.y;
 
-    // move X to platform center
     this.tweens.add({
       targets: sprite,
       x: landX,
@@ -249,7 +283,6 @@ class ArenaScene extends Phaser.Scene {
       ease: "Quad.easeInOut",
     });
 
-    // parabolic Y
     this.tweens.add({
       targets: sprite,
       y: landY,
@@ -264,22 +297,18 @@ class ArenaScene extends Phaser.Scene {
       },
       onComplete: () => {
         A.onPlatform = true;
-
-        // face OUTWARD when they’re back on the platform
-        const outward = A.id === "TR"; // TL=false (face left), TR=true (face right)
+        const outward = A.id === "TR";
         sprite.setFlipX(outward);
-
-        // idle walk (rev on right side)
         const onRight = this.isRight(A.id);
         sprite.play(
           onRight ? `${A.prefix}_walk_anim_rev` : `${A.prefix}_walk_anim`,
           true
         );
-
         after?.();
       },
     });
   }
+
   private createAnimsFor(prefix: CharacterId) {
     const ensure = (
       key: string,
@@ -324,7 +353,6 @@ class ArenaScene extends Phaser.Scene {
   private buildAttackers() {
     const width = DESIGN_W;
 
-    // Positions authored in design space (stable everywhere)
     const padX = 160;
     const leftX = padX;
     const rightX = width - padX;
@@ -394,21 +422,146 @@ class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /* ---------------------- Loop & attacks ---------------------- */
+  /* ---------------------- Texture helpers to enforce consistent size ---------------------- */
+  private fitThanosSize() {
+    if (!this.thanos) return;
+    if (this.thanosBaseW > 0 && this.thanosBaseH > 0) {
+      this.thanos.setDisplaySize(this.thanosBaseW, this.thanosBaseH);
+    }
+  }
+  private setThanosTexture(key: string) {
+    this.thanos.setTexture(key);
+    this.fitThanosSize();
+  }
 
+  /* ---------------------- UTIL: Apply hit FX (texture + tint + facing) ---------------------- */
+  private showHitFlash(attackerX: number) {
+    if (this.isThanosDead) return;
+
+    // Face the attacker (turn if hit from behind)
+    this.thanos.setFlipX(attackerX > this.thanos.x);
+
+    // Switch to "getting hit" texture for the duration of the red highlight
+    this.setThanosTexture("thanos_hit");
+    this.thanos.setTint(0xff0000);
+
+    // Revert after highlight if not dead
+    this.time.delayedCall(150, () => {
+      if (this.isThanosDead) return; // don't revert if already dead
+      this.thanos.clearTint();
+      this.setThanosTexture("thanos"); // back to normal after highlight
+    });
+  }
+
+  /* ---------------------- Final Assault Orchestration ---------------------- */
+  private async killThanos() {
+    if (this.finalAssaultStarted || this.isThanosDead) return;
+    this.finalAssaultStarted = true;
+
+    // stop the normal loop, clear any pending heavy cue from hp drop
+    this.loopRunning = false;
+    this.pendingHeavy = false;
+
+    // helper delay using Phaser clock
+    const delay = (ms: number) =>
+      new Promise<void>((resolve) =>
+        this.time.delayedCall(ms, () => resolve())
+      );
+
+    // ensure an attacker is free before commanding heavy
+    const heavyWhenFree = async (id: SlotId) => {
+      const a = this.A[id];
+      if (!a) return;
+      // wait until not busy (e.g., finishing a light)
+      let guard = 0;
+      while (a.busy && guard < 120) {
+        await delay(50);
+        guard++;
+      }
+      await this.heavy(id);
+    };
+
+    // Sequential big finish: TL -> TR -> BR -> BL
+    for (const id of ORDER_CLOCKWISE) {
+      await heavyWhenFree(id);
+      await delay(120); // small beat between smashes
+    }
+
+    // Now actually die (dead texture -> blink -> fall)
+    this.killThanosVisuals();
+  }
+
+  /* ---------------------- Death Visuals ---------------------- */
+  private killThanosVisuals() {
+    if (this.isThanosDead) return;
+    this.isThanosDead = true;
+
+    // lock to the dead texture at the same visual size
+    this.setThanosTexture("thanos_dead");
+    this.thanos.clearTint();
+    this.thanos.setAlpha(1);
+
+    this.cameras.main.flash(80, 255, 255, 255, false);
+    this.cameras.main.shake(240, 0.004);
+
+    // blink while dead image is shown
+    const blinkTimes = 6;
+    this.time.addEvent({
+      delay: 80,
+      repeat: blinkTimes * 2,
+      callback: () => {
+        this.thanos.setAlpha(this.thanos.alpha === 1 ? 0.2 : 1);
+      },
+    });
+
+    // fall & fade
+    this.tweens.add({
+      targets: this.thanos,
+      y: this.thanos.y + 180,
+      alpha: 0,
+      duration: 900,
+      ease: "Quad.easeIn",
+      delay: 80 * blinkTimes,
+      onComplete: () => {
+        this.tweens.add({
+          targets: this.defeatText,
+          alpha: 1,
+          duration: 450,
+          ease: "Quad.easeOut",
+        });
+
+        // send everyone home
+        (Object.values(this.A) as AttackerRecord[]).forEach((a) => {
+          if (!a) return;
+          this.returnToStart(a, () => {
+            const onRight = this.isRight(a.id);
+            a.sprite.setFlipX(onRight);
+            a.sprite.play(
+              onRight ? `${a.prefix}_walk_anim_rev` : `${a.prefix}_walk_anim`,
+              true
+            );
+            a.busy = false;
+          });
+        });
+      },
+    });
+  }
+
+  /* ---------------------- Loop & attacks ---------------------- */
   private async runClockwiseLoop() {
     while (this.loopRunning) {
-      // If a heavy is pending (HP dropped), TL goes now.
+      if (this.isThanosDead || this.finalAssaultStarted) break;
+
       if (this.pendingHeavy) {
         this.pendingHeavy = false;
-        await this.heavy("TL");
-        // continue loop from whoever is next after TL
-        this.loopIndex = 1; // next is TR in the clockwise array
+        if (!this.isThanosDead && !this.finalAssaultStarted)
+          await this.heavy("TL");
+        this.loopIndex = 1; // next TR
         continue;
       }
 
       const id = ORDER_CLOCKWISE[this.loopIndex] as SlotId;
-      await this.light(id);
+      if (!this.isThanosDead && !this.finalAssaultStarted) await this.light(id);
 
       this.loopIndex = (this.loopIndex + 1) % ORDER_CLOCKWISE.length;
     }
@@ -419,10 +572,16 @@ class ArenaScene extends Phaser.Scene {
     if (!A) return Promise.resolve();
 
     return new Promise<void>((resolve) => {
-      if (A.busy) return resolve();
+      if (A.busy || this.isThanosDead || this.finalAssaultStarted)
+        return resolve();
       A.busy = true;
 
       const runAndStrike = () => {
+        if (this.isThanosDead || this.finalAssaultStarted) {
+          A.busy = false;
+          return resolve();
+        }
+
         const sprite = A.sprite;
         const prefix = A.prefix;
         const targetX =
@@ -440,6 +599,11 @@ class ArenaScene extends Phaser.Scene {
           duration: CONFIG.attacker.lightDashDuration,
           ease: "Quad.easeOut",
           onComplete: () => {
+            if (this.isThanosDead || this.finalAssaultStarted) {
+              this.returnToStart(A, resolve);
+              return;
+            }
+
             const attackKey = `${prefix}_attack${
               1 + Math.floor(Math.random() * 3)
             }_anim`;
@@ -448,11 +612,10 @@ class ArenaScene extends Phaser.Scene {
             this.sound.play("sfx_impact", { volume: 0.7 });
             this.sound.play("sfx_slash", { volume: 0.6, rate: 1.05 });
 
-            // gentler shake to avoid perceived zoom
+            // shake + red highlight; make Thanos face attacker & show hit image for the highlight
             this.time.delayedCall(120, () => {
               this.cameras.main.shake(200, 0.004);
-              this.thanos.setTint(0xff0000);
-              this.time.delayedCall(150, () => this.thanos.clearTint());
+              this.showHitFlash(sprite.x);
             });
 
             sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
@@ -472,10 +635,15 @@ class ArenaScene extends Phaser.Scene {
     if (!A) return Promise.resolve();
 
     return new Promise<void>((resolve) => {
-      if (A.busy) return resolve();
+      if (A.busy || this.isThanosDead) return resolve(); // allow during finalAssaultStarted (until visuals)
       A.busy = true;
 
       const doHeavy = () => {
+        if (this.isThanosDead) {
+          A.busy = false;
+          return resolve();
+        }
+
         const sprite = A.sprite;
         const prefix = A.prefix;
         const targetX =
@@ -499,6 +667,11 @@ class ArenaScene extends Phaser.Scene {
         else sprite.anims.pause();
 
         this.time.delayedCall(CONFIG.attacker.heavy.holdMs, () => {
+          if (this.isThanosDead) {
+            A.busy = false;
+            return resolve();
+          }
+
           this.tweens.add({
             targets: sprite,
             x: targetX,
@@ -507,11 +680,11 @@ class ArenaScene extends Phaser.Scene {
             onComplete: () => {
               sprite.anims.resume();
 
+              // flash + shake + highlight; also orient Thanos to attacker during hit
               this.time.delayedCall(120, () => {
                 this.cameras.main.flash(60, 255, 255, 255, false);
                 this.cameras.main.shake(200, 0.004);
-                this.thanos.setTint(0xff0000);
-                this.time.delayedCall(150, () => this.thanos.clearTint());
+                this.showHitFlash(sprite.x);
               });
 
               sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
@@ -531,12 +704,11 @@ class ArenaScene extends Phaser.Scene {
     const sprite = A.sprite;
     const prefix = A.prefix;
 
-    // Case A: top player who is currently on the GROUND -> run under platform, then jump up.
+    // top player on ground -> run to under platform, then jump up
     if (this.isTop(A.id) && !A.onPlatform && A.platformImg) {
       const targetX = A.groundHome.x;
       const targetY = A.groundHome.y;
 
-      // face run direction
       const goingLeft = sprite.x > targetX;
       sprite.setFlipX(goingLeft);
 
@@ -548,7 +720,6 @@ class ArenaScene extends Phaser.Scene {
         ease: CONFIG.attacker.animation.ease,
         onStart: () => sprite.play(`${prefix}_run_anim`, true),
         onComplete: () => {
-          // now jump back up to platform
           this.jumpUpToPlatform(A, () => {
             A.busy = false;
             done();
@@ -556,10 +727,10 @@ class ArenaScene extends Phaser.Scene {
         },
       });
 
-      return; // important: stop here
+      return;
     }
 
-    // Case B: already at correct layer (bottoms or tops already on platform)
+    // already correct layer
     const targetX = A.onPlatform ? A.platformHome.x : A.groundHome.x;
     const targetY = A.onPlatform ? A.platformHome.y : A.groundHome.y;
 
@@ -631,14 +802,12 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
   useEffect(() => {
     if (!gameRef.current || phaserGameRef.current) return;
 
-    // Parent element sizing and interaction guards
     const parentEl = gameRef.current;
     parentEl.style.width = "100%";
-    parentEl.style.height = "100svh"; // avoid mobile toolbar vh jumps
+    parentEl.style.height = "100svh";
     parentEl.style.position = "relative";
     parentEl.style.background = "transparent";
     parentEl.style.overflow = "hidden";
-    // reduce accidental browser zoom/scroll during shakes
     (parentEl.style as any).touchAction = "none";
     (parentEl.style as any).overscrollBehavior = "contain";
 
@@ -646,33 +815,29 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
       type: Phaser.AUTO,
       parent: parentEl,
       backgroundColor: "transparent",
-
-      // Use virtual design resolution + FIT so world coords remain stable.
       width: DESIGN_W,
       height: DESIGN_H,
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        zoom: 1, // keep canvas CSS zoom at 1
+        zoom: 1,
       },
-
       physics: { default: "arcade", arcade: { debug: false } },
-      scene: [ArenaScene],
+      scene: [], // we'll add the scene instance manually to avoid boot race
       render: { pixelArt: false, antialias: true },
     };
 
     phaserGameRef.current = new Phaser.Game(config);
 
-    // start with players and initial hp
-    phaserGameRef.current.scene.start("ArenaScene", { players, bossHp });
-    sceneRef.current = phaserGameRef.current.scene.getScene(
-      "ArenaScene"
-    ) as ArenaScene;
+    // Avoid race: add an instance and autostart with initial data
+    const scene = new ArenaScene();
+    phaserGameRef.current.scene.add("ArenaScene", scene, true, {
+      players,
+      bossHp,
+    });
+    sceneRef.current = scene;
 
-    // keep canvas sized with window; Scale.FIT handles aspect safely
-    const onResize = () => {
-      phaserGameRef.current?.scale.refresh();
-    };
+    const onResize = () => phaserGameRef.current?.scale.refresh();
     window.addEventListener("resize", onResize);
 
     return () => {
@@ -681,9 +846,9 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
       phaserGameRef.current = null;
       sceneRef.current = null;
     };
-  }, []);
+  }, []); // mount once
 
-  // pass HP changes into the scene (triggers TL heavy when it drops)
+  // React → Scene HP updates (prop changes over time)
   useEffect(() => {
     sceneRef.current?.updateBossHp(bossHp);
   }, [bossHp]);

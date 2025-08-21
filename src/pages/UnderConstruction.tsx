@@ -997,23 +997,38 @@ export const Leaderboard: React.FC = () => {
 
 const BAR_WIDTH = 600; // Wider visual bar for clarity
 
-/**
- * Team HP Bar component for non-access users in Spaces
- */
-const TeamHPBar: React.FC = () => {
-  const { data: teamHP, isLoading } = useBackendQuery("team-hp", "/team-hp");
+const useHP = () => {
+  const {
+    data: teamHP,
+    error,
+    isLoading,
+  } = useBackendQuery("team-hp", "/team-hp");
 
-  // Fallback data for when backend is unavailable
   const fallbackData = { hp: 750, total_hp: 1000 };
 
-  // Always use fallback data if we don't have valid backend data
   const hpData =
     teamHP && typeof teamHP === "object" && teamHP.hp !== undefined
       ? teamHP
       : fallbackData;
 
   const { hp, total_hp } = hpData as any;
+
   const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
+
+  return {
+    hp,
+    total_hp,
+    clampedHP,
+    isLoading,
+  };
+};
+/**
+ * Team HP Bar component for non-access users in Spaces
+ */
+const TeamHPBar: React.FC = () => {
+  const { hp, total_hp, clampedHP, isLoading } = useHP();
+
+  // Fallback data for when backend is unavailable
 
   // Only show loading if we're actually loading and don't have an error yet
   if (isLoading) return <div>Loading...</div>;
@@ -1098,6 +1113,8 @@ const TeamHPBar: React.FC = () => {
 };
 
 export const Spaces: React.FC = () => {
+  const { hp } = useHP();
+
   const hasDesktopSidebar =
     typeof window !== "undefined" && window.innerWidth >= 1024;
   const hasCareerAccess = isCareerAssociate();
@@ -1178,7 +1195,7 @@ export const Spaces: React.FC = () => {
           }}
         >
           {/* FourPlayer arena with dynamic players data */}
-          <FourPlayerArena players={playersData as any} bossHp={0} />
+          <FourPlayerArena players={playersData as any} bossHp={hp} />
         </Card>
       </main>
     </div>
