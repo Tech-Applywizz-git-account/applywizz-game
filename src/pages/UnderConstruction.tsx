@@ -1151,19 +1151,18 @@ export const Spaces: React.FC = () => {
         }}
       >
         {/* HP Bar Overlay for non-access users */}
-        {!hasCareerAccess && (
-          <div
-            style={{
-              position: "absolute",
-              top: "80px", // Below the floating navbar
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 10, // Ensure it's on top of the game
-            }}
-          >
-            <TeamHPBar />
-          </div>
-        )}
+
+        <div
+          style={{
+            position: "absolute",
+            top: "80px", // Below the floating navbar
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10, // Ensure it's on top of the game
+          }}
+        >
+          <TeamHPBar />
+        </div>
 
         <Card
           fullBleed
