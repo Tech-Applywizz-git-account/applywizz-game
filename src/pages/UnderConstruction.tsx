@@ -866,7 +866,7 @@ export const Leaderboard: React.FC = () => {
             </Card>
 
             {/* Period Toggle - Only for career associates */}
-            {hasCareerAccess && (
+            {false && (
               <Card style={{ display: "flex", padding: "4px" }}>
                 {[
                   { id: "today", label: "Today" },
@@ -1084,10 +1084,10 @@ export const Spaces: React.FC = () => {
   const hasCareerAccess = isCareerAssociate();
 
   // Fetch top-four data for non-access users - properly handle loading state
-  const { 
-    data: topFourData, 
-    isLoading: topFourLoading, 
-    error: topFourError 
+  const {
+    data: topFourData,
+    isLoading: topFourLoading,
+    error: topFourError,
   } = useBackendQuery("top-four", "/top-four");
 
   // Prepare players data for FourPlayerArena
@@ -1169,12 +1169,14 @@ export const Spaces: React.FC = () => {
         >
           {/* Show loading state for non-career associates while top-four data loads */}
           {!hasCareerAccess && topFourLoading ? (
-            <div style={{
-              color: colors.textPrimary,
-              fontSize: "1.2rem",
-              fontWeight: "600",
-              textAlign: "center",
-            }}>
+            <div
+              style={{
+                color: colors.textPrimary,
+                fontSize: "1.2rem",
+                fontWeight: "600",
+                textAlign: "center",
+              }}
+            >
               Loading arena...
             </div>
           ) : (
