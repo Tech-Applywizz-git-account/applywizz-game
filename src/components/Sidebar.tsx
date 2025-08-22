@@ -31,7 +31,6 @@ const Sidebar: React.FC = () => {
 
   const navigationItems: NavigationItem[] = [
     { id: "home", label: "Dashboard", icon: Home, path: "/dashboard" },
-    { id: "avatar", label: "Avatar", icon: User, path: "/avatar" },
     {
       id: "leaderboard",
       label: "Leaderboard",

@@ -866,7 +866,7 @@ export const Leaderboard: React.FC = () => {
             </Card>
 
             {/* Period Toggle - Only for career associates */}
-            {false && (
+            {hasCareerAccess && (
               <Card style={{ display: "flex", padding: "4px" }}>
                 {[
                   { id: "today", label: "Today" },
