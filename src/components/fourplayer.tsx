@@ -1,17 +1,14 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./../components/ui/card.tsx";
+import { AvatarId, AVATAR_FOLDER_MAP } from "../types/avatarTypes";
+import { getSelectedAvatar } from "../utils/coinSystem";
 
 /* ---------------------- Types ---------------------- */
 type SlotId = "TL" | "TR" | "BR" | "BL";
 
-export type CharacterId =
-  | "fighter"
-  | "shinobi"
-  | "samurai"
-  | "samurai2"
-  | "samurai3"
-  | "samuraiArcher";
+// Use the new avatar system
+export type CharacterId = AvatarId;
 
 export interface PlayerSpec {
   uname: string;
@@ -27,14 +24,7 @@ const DESIGN_W = 1280;
 const DESIGN_H = 720;
 
 /* ---------------------- Assets map ---------------------- */
-const CHAR_FOLDER: Record<CharacterId, string> = {
-  fighter: "Fighter",
-  shinobi: "Shinobi",
-  samurai: "Samurai",
-  samurai2: "Samurai2",
-  samurai3: "Samurai3",
-  samuraiArcher: "SamuraiArcher",
-};
+const CHAR_FOLDER: Record<CharacterId, string> = AVATAR_FOLDER_MAP;
 
 /* ---------------------- Config ---------------------- */
 const CONFIG = {
@@ -791,6 +781,19 @@ class ArenaScene extends Phaser.Scene {
 }
 
 /* ---------------------- React wrapper ---------------------- */
+
+// Helper function to create player specs with user's selected avatar
+const createPlayerSpecs = (): [PlayerSpec, PlayerSpec, PlayerSpec, PlayerSpec] => {
+  const selectedAvatarId = getSelectedAvatar() as CharacterId;
+  
+  return [
+    { uname: "Player 1", characterId: selectedAvatarId },
+    { uname: "Player 2", characterId: selectedAvatarId },
+    { uname: "Player 3", characterId: selectedAvatarId },
+    { uname: "Player 4", characterId: selectedAvatarId },
+  ];
+};
+
 const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
   players,
   bossHp,
@@ -829,10 +832,13 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
 
     phaserGameRef.current = new Phaser.Game(config);
 
+    // Use player's selected avatar for all players
+    const playerSpecs = createPlayerSpecs();
+
     // Avoid race: add an instance and autostart with initial data
     const scene = new ArenaScene();
     phaserGameRef.current.scene.add("ArenaScene", scene, true, {
-      players,
+      players: playerSpecs,
       bossHp,
     });
     sceneRef.current = scene;
