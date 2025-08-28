@@ -20,6 +20,7 @@ import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
 import { getDisplayAvatar } from "../utils/avatarUtils";
+import { getSelectedAvatar } from "../utils/coinSystem";
 
 interface UnderConstructionProps {
   title: string;
@@ -1092,23 +1093,25 @@ export const Spaces: React.FC = () => {
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
+    // Get the user's selected avatar from the marketplace
+    const selectedAvatarId = getSelectedAvatar();
+    
     if (topFourData && Array.isArray(topFourData.users)) {
       // Extract usernames from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
-      const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
 
       return users.map((user: any, index: number) => ({
         uname: user.username || `User${index + 1}`,
-        characterId: characterIds[index] || "samurai",
+        characterId: selectedAvatarId, // Use the selected avatar for all players
       }));
     }
 
-    // Default fallback data for career associates or when API fails
+    // Default fallback data - use selected avatar for all players
     return [
-      { uname: "u1", characterId: "samurai" },
-      { uname: "u2", characterId: "shinobi" },
-      { uname: "u3", characterId: "samurai2" },
-      { uname: "u4", characterId: "samuraiArcher" },
+      { uname: "u1", characterId: selectedAvatarId },
+      { uname: "u2", characterId: selectedAvatarId },
+      { uname: "u3", characterId: selectedAvatarId },
+      { uname: "u4", characterId: selectedAvatarId },
     ];
   };
 
