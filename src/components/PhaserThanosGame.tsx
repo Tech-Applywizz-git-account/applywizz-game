@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./ui/card";
+import { useAvatar } from "../contexts/AvatarContext";
+import { getSpriteFolder } from "../utils/avatarMapping";
 
 interface ThanosGameProps {
   isThanosDead: boolean;
@@ -88,31 +90,36 @@ class ArenaScene extends Phaser.Scene {
   private bg!: Phaser.GameObjects.Image;
   private bg2!: Phaser.GameObjects.Image;
 
+  private spriteFolder: string = "Fighter"; // Default to Fighter
+
   constructor() {
     super("ArenaScene");
   }
 
   /**
-   * Initialize the scene with Thanos death state
-   * @param data - Scene initialization data containing isThanosDead state
+   * Initialize the scene with Thanos death state and selected avatar
+   * @param data - Scene initialization data containing isThanosDead state and avatar
    */
-  init(data: { isThanosDead: boolean }): void {
+  init(data: { isThanosDead: boolean; spriteFolder?: string }): void {
     this.isThanosDead = data.isThanosDead || false;
+    this.spriteFolder = data.spriteFolder || "Fighter";
   }
 
   preload(): void {
     this.load.image("thanos", "/assets/thanos.png");
 
-    // Fighter sprites
-    this.load.spritesheet("fighter_idle", "/assets/avatars/Fighter/Idle.png", {
+    // Dynamic avatar sprites based on selected avatar
+    const basePath = `/assets/avatars/${this.spriteFolder}`;
+    
+    this.load.spritesheet("fighter_idle", `${basePath}/Idle.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_walk", "/assets/avatars/Fighter/Walk.png", {
+    this.load.spritesheet("fighter_walk", `${basePath}/Walk.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_run", "/assets/avatars/Fighter/Run.png", {
+    this.load.spritesheet("fighter_run", `${basePath}/Run.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
@@ -120,7 +127,7 @@ class ArenaScene extends Phaser.Scene {
     // Attack sprites
     this.load.spritesheet(
       "fighter_attack1",
-      "/assets/avatars/Fighter/Attack_1.png",
+      `${basePath}/Attack_1.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -128,7 +135,7 @@ class ArenaScene extends Phaser.Scene {
     );
     this.load.spritesheet(
       "fighter_attack2",
-      "/assets/avatars/Fighter/Attack_2.png",
+      `${basePath}/Attack_2.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -136,7 +143,7 @@ class ArenaScene extends Phaser.Scene {
     );
     this.load.spritesheet(
       "fighter_attack3",
-      "/assets/avatars/Fighter/Attack_3.png",
+      `${basePath}/Attack_3.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -540,10 +547,13 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<ArenaScene | null>(null);
+  const { getSpriteFolder } = useAvatar();
 
   useEffect(() => {
     if (!gameRef.current) return;
     if (phaserGameRef.current) return;
+
+    const selectedSpriteFolder = getSpriteFolder();
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
@@ -567,7 +577,10 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
     phaserGameRef.current = new Phaser.Game(config);
 
     // Store reference to the scene for later updates
-    phaserGameRef.current.scene.start("ArenaScene", { isThanosDead });
+    phaserGameRef.current.scene.start("ArenaScene", { 
+      isThanosDead, 
+      spriteFolder: selectedSpriteFolder 
+    });
     sceneRef.current = phaserGameRef.current.scene.getScene(
       "ArenaScene"
     ) as ArenaScene;
@@ -579,7 +592,7 @@ const PhaserThanosGame: React.FC<ThanosGameProps> = ({ isThanosDead }) => {
         sceneRef.current = null;
       }
     };
-  }, []);
+  }, [getSpriteFolder]); // Re-create game when sprite folder changes
 
   // Update scene when death state changes
   useEffect(() => {

@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import { Leaderboard, Spaces } from "./pages/UnderConstruction";
 import "./App.css";
 import { AuthContextProvider } from "./contexts/contexts";
+import { AvatarProvider } from "./contexts/AvatarContext";
 import { useAuthContext } from "./hooks/hooks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { isCareerAssociate } from "./utils/roleUtils";
@@ -41,7 +42,9 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthContextProvider>
-          <PageRoutes />
+          <AvatarProvider>
+            <PageRoutes />
+          </AvatarProvider>
         </AuthContextProvider>
       </BrowserRouter>
     </QueryClientProvider>

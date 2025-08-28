@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -8,6 +8,7 @@ import {
   Star,
   Upload,
   Image,
+  RotateCcw,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Avatar, {
@@ -24,42 +25,62 @@ import {
 } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext } from "../hooks/hooks";
+import { useAvatar } from "../contexts/AvatarContext";
 import { backendPostRequest } from "../lib/backendRequest";
 
 const avatarIds = getAvailableAvatarIds();
 
 const AvatarSelection: React.FC = () => {
-  const [selectedAvatar, setSelectedAvatar] = useState<AvatarData | null>(null);
   const [isRandomizing, setIsRandomizing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
   const { token } = useAuthContext();
+  const { currentAvatar, selectAvatar, revertAvatar, hasChanged, previousAvatar } = useAvatar();
+  
+  // Local selected avatar for UI (before committing to context)
+  const [localSelectedAvatar, setLocalSelectedAvatar] = useState<AvatarData | null>(null);
+  
+  // Initialize local selection with current avatar
+  useEffect(() => {
+    setLocalSelectedAvatar({
+      id: currentAvatar.id,
+      // Keep existing format for backward compatibility
+    } as AvatarData);
+  }, [currentAvatar]);
 
   const handleContinue = async (): Promise<void> => {
-    if (selectedAvatar && !isSubmitting) {
+    if (localSelectedAvatar && !isSubmitting) {
       setIsSubmitting(true);
 
       try {
+        // Update the avatar context
+        selectAvatar(localSelectedAvatar.id);
+        
         // Send POST request to backend with avatar data
         await backendPostRequest(
           "/avatar-info",
           token as string,
-          selectedAvatar
+          localSelectedAvatar
         );
-
-        // Store selected avatar in localStorage with the new simplified format
-        localStorage.setItem("avatar", JSON.stringify(selectedAvatar));
 
         // Navigate to dashboard
         navigate("/dashboard");
       } catch (error) {
         console.error("Failed to save avatar:", error);
         // Continue to dashboard even if backend request fails
-        localStorage.setItem("avatar", JSON.stringify(selectedAvatar));
         navigate("/dashboard");
       } finally {
         setIsSubmitting(false);
       }
+    }
+  };
+
+  const handleRevert = (): void => {
+    if (previousAvatar) {
+      revertAvatar();
+      setLocalSelectedAvatar({
+        id: previousAvatar.id,
+      } as AvatarData);
     }
   };
 
@@ -71,7 +92,7 @@ const AvatarSelection: React.FC = () => {
     const interval = setInterval(() => {
       const randomId = avatarIds[Math.floor(Math.random() * avatarIds.length)];
       const randomAvatar: AvatarData = { id: randomId };
-      setSelectedAvatar(randomAvatar);
+      setLocalSelectedAvatar(randomAvatar);
       count++;
 
       if (count >= 8) {
@@ -205,8 +226,8 @@ const AvatarSelection: React.FC = () => {
                   key={id}
                   id={id}
                   size={120}
-                  isSelected={selectedAvatar?.id === id}
-                  onClick={() => setSelectedAvatar({ id })}
+                  isSelected={localSelectedAvatar?.id === id}
+                  onClick={() => setLocalSelectedAvatar({ id })}
                   animationDelay={index * 0.1}
                 />
               ))}
@@ -315,7 +336,7 @@ const AvatarSelection: React.FC = () => {
                   Avatar Preview
                 </CardTitle>
                 <CardDescription style={{ fontSize: "1rem" }}>
-                  {selectedAvatar
+                  {localSelectedAvatar
                     ? "Great choice! This avatar will represent you."
                     : "Select an avatar to see preview"}
                 </CardDescription>
@@ -329,15 +350,15 @@ const AvatarSelection: React.FC = () => {
                     justifyContent: "center",
                     marginBottom: spacing.xl,
                   }}
-                  key={selectedAvatar?.id || "empty"}
+                  key={localSelectedAvatar?.id || "empty"}
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.5 }}
                 >
-                  {selectedAvatar ? (
+                  {localSelectedAvatar ? (
                     <div style={{ position: "relative" }}>
                       <Avatar
-                        id={selectedAvatar.id}
+                        id={localSelectedAvatar.id}
                         size={160}
                         isSelected={true}
                         style={{
@@ -397,7 +418,7 @@ const AvatarSelection: React.FC = () => {
                 </motion.div>
 
                 {/* Avatar Details */}
-                {selectedAvatar && (
+                {localSelectedAvatar && (
                   <motion.div
                     style={{
                       marginBottom: spacing.xl,
@@ -421,7 +442,7 @@ const AvatarSelection: React.FC = () => {
                       <span
                         style={{ color: colors.primary, fontWeight: "600" }}
                       >
-                        #{selectedAvatar.id}
+                        #{localSelectedAvatar.id}
                       </span>
                     </p>
                     <p
@@ -441,33 +462,51 @@ const AvatarSelection: React.FC = () => {
                   </motion.div>
                 )}
 
-                {/* Continue Button */}
-                <Button
-                  onClick={handleContinue}
-                  disabled={!selectedAvatar || isSubmitting}
-                  size="lg"
-                  style={{
-                    width: "100%",
-                    fontSize: "1.1rem",
-                    marginBottom: spacing.lg,
-                  }}
-                >
-                  <span>
-                    {isSubmitting ? "Saving..." : "Continue to Dashboard"}
-                  </span>
-                  {selectedAvatar && !isSubmitting && (
-                    <motion.div
-                      animate={{ x: [0, 4, 0] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
+                {/* Action Buttons */}
+                <div style={{ display: "flex", flexDirection: "column", gap: spacing.md }}>
+                  {/* Continue Button */}
+                  <Button
+                    onClick={handleContinue}
+                    disabled={!localSelectedAvatar || isSubmitting}
+                    size="lg"
+                    style={{
+                      width: "100%",
+                      fontSize: "1.1rem",
+                    }}
+                  >
+                    <span>
+                      {isSubmitting ? "Saving..." : "Continue to Dashboard"}
+                    </span>
+                    {localSelectedAvatar && !isSubmitting && (
+                      <motion.div
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <ArrowRight size={20} />
+                      </motion.div>
+                    )}
+                  </Button>
+
+                  {/* Revert Button */}
+                  {previousAvatar && (
+                    <Button
+                      onClick={handleRevert}
+                      variant="outline"
+                      size="lg"
+                      style={{
+                        width: "100%",
+                        fontSize: "1rem",
                       }}
                     >
-                      <ArrowRight size={20} />
-                    </motion.div>
+                      <RotateCcw size={16} />
+                      <span>Revert to Previous</span>
+                    </Button>
                   )}
-                </Button>
+                </div>
 
                 {/* Progress indicator */}
                 <motion.div
