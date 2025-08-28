@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./../components/ui/card.tsx";
+import { useAvatar } from "../contexts/AvatarContext";
+import { getSpriteFolder } from "../utils/avatarMapping";
 
 /* ---------------------- Types ---------------------- */
 type SlotId = "TL" | "TR" | "BR" | "BL";
@@ -101,13 +103,15 @@ class ArenaScene extends Phaser.Scene {
   // base display size of normal thanos so swaps keep identical size
   private thanosBaseW = 0;
   private thanosBaseH = 0;
+  private selectedSpriteFolder: string = "Fighter"; // Default to Fighter
 
   constructor() {
     super("ArenaScene");
   }
 
-  init(data: { players: FourPlayerArenaProps["players"]; bossHp: number }) {
+  init(data: { players: FourPlayerArenaProps["players"]; bossHp: number; spriteFolder?: string }) {
     this.players = data.players;
+    this.selectedSpriteFolder = data.spriteFolder || "Fighter";
 
     // Use incoming bossHp (clamped 0..100)
     const hpFromProps =
@@ -153,9 +157,10 @@ class ArenaScene extends Phaser.Scene {
     this.load.audio("sfx_slash", "assets/Sounds/slash.mp3");
     this.load.audio("sfx_impact", "assets/Sounds/impact.mp3");
 
-    // only the needed characters
+    // Load sprites for all unique character IDs, but use the selected avatar sprite folder
     [...new Set(this.players.map((p) => p.characterId))].forEach((id) => {
-      const base = `assets/avatars/${CHAR_FOLDER[id]}`;
+      // Use the selected sprite folder instead of the hard-coded mapping
+      const base = `assets/avatars/${this.selectedSpriteFolder}`;
       this.load.spritesheet(`${id}_idle`, `${base}/Idle.png`, {
         frameWidth: 128,
         frameHeight: 128,
@@ -798,6 +803,7 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
   const gameRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<ArenaScene | null>(null);
+  const { getSpriteFolder } = useAvatar();
 
   useEffect(() => {
     if (!gameRef.current || phaserGameRef.current) return;
@@ -831,9 +837,11 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
 
     // Avoid race: add an instance and autostart with initial data
     const scene = new ArenaScene();
+    const selectedSpriteFolder = getSpriteFolder();
     phaserGameRef.current.scene.add("ArenaScene", scene, true, {
       players,
       bossHp,
+      spriteFolder: selectedSpriteFolder,
     });
     sceneRef.current = scene;
 
@@ -846,7 +854,7 @@ const FourPlayerArena: React.FC<FourPlayerArenaProps> = ({
       phaserGameRef.current = null;
       sceneRef.current = null;
     };
-  }, []); // mount once
+  }, [getSpriteFolder]); // Re-create game when sprite folder changes
 
   // React → Scene HP updates (prop changes over time)
   useEffect(() => {
