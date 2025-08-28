@@ -1,10 +1,22 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./ui/card";
+import { getSelectedCharacterId } from "../utils/avatarToCharacterMapping";
+import { CharacterId } from "../components/fourplayer";
 
 interface ThanosGameProps {
   isThanosDead: boolean;
 }
+
+// Character folder mapping
+const CHAR_FOLDER: Record<CharacterId, string> = {
+  fighter: "Fighter",
+  shinobi: "Shinobi",
+  samurai: "Samurai",
+  samurai2: "Samurai2",
+  samurai3: "Samurai3",
+  samuraiArcher: "SamuraiArcher",
+};
 
 interface GameConfig {
   thanos: {
@@ -87,9 +99,12 @@ class ArenaScene extends Phaser.Scene {
   private defeatText!: Phaser.GameObjects.Text;
   private bg!: Phaser.GameObjects.Image;
   private bg2!: Phaser.GameObjects.Image;
+  private selectedCharacter: CharacterId;
 
   constructor() {
     super("ArenaScene");
+    // Get the selected character when the scene is created
+    this.selectedCharacter = getSelectedCharacterId();
   }
 
   /**
@@ -103,40 +118,43 @@ class ArenaScene extends Phaser.Scene {
   preload(): void {
     this.load.image("thanos", "/assets/thanos.png");
 
-    // Fighter sprites
-    this.load.spritesheet("fighter_idle", "/assets/avatars/Fighter/Idle.png", {
+    // Load selected character sprites
+    const characterFolder = CHAR_FOLDER[this.selectedCharacter];
+    const basePath = `/assets/avatars/${characterFolder}`;
+    
+    this.load.spritesheet(`${this.selectedCharacter}_idle`, `${basePath}/Idle.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_walk", "/assets/avatars/Fighter/Walk.png", {
+    this.load.spritesheet(`${this.selectedCharacter}_walk`, `${basePath}/Walk.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_run", "/assets/avatars/Fighter/Run.png", {
+    this.load.spritesheet(`${this.selectedCharacter}_run`, `${basePath}/Run.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
 
     // Attack sprites
     this.load.spritesheet(
-      "fighter_attack1",
-      "/assets/avatars/Fighter/Attack_1.png",
+      `${this.selectedCharacter}_attack1`,
+      `${basePath}/Attack_1.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
       }
     );
     this.load.spritesheet(
-      "fighter_attack2",
-      "/assets/avatars/Fighter/Attack_2.png",
+      `${this.selectedCharacter}_attack2`,
+      `${basePath}/Attack_2.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
       }
     );
     this.load.spritesheet(
-      "fighter_attack3",
-      "/assets/avatars/Fighter/Attack_3.png",
+      `${this.selectedCharacter}_attack3`,
+      `${basePath}/Attack_3.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -219,7 +237,7 @@ class ArenaScene extends Phaser.Scene {
       .sprite(CONFIG.attacker.spawnXOffset, this.getGroundY())
       .setScale(CONFIG.attacker.scale)
       .setDepth(6); // always above thanos
-    this.attacker.play("fighter_walk_anim");
+    this.attacker.play(`${this.selectedCharacter}_walk_anim`);
 
     // Defeat banner (hidden initially)
     this.defeatText = this.add
@@ -313,13 +331,13 @@ class ArenaScene extends Phaser.Scene {
       });
     };
 
-    loopAnim("fighter_idle_anim", "fighter_idle", 8);
-    loopAnim("fighter_walk_anim", "fighter_walk", 10);
-    loopAnim("fighter_run_anim", "fighter_run", 20);
+    loopAnim(`${this.selectedCharacter}_idle_anim`, `${this.selectedCharacter}_idle`, 8);
+    loopAnim(`${this.selectedCharacter}_walk_anim`, `${this.selectedCharacter}_walk`, 10);
+    loopAnim(`${this.selectedCharacter}_run_anim`, `${this.selectedCharacter}_run`, 20);
 
-    oneShotAnim("fighter_attack1_anim", "fighter_attack1", 14);
-    oneShotAnim("fighter_attack2_anim", "fighter_attack2", 14);
-    oneShotAnim("fighter_attack3_anim", "fighter_attack3", 14);
+    oneShotAnim(`${this.selectedCharacter}_attack1_anim`, `${this.selectedCharacter}_attack1`, 14);
+    oneShotAnim(`${this.selectedCharacter}_attack2_anim`, `${this.selectedCharacter}_attack2`, 14);
+    oneShotAnim(`${this.selectedCharacter}_attack3_anim`, `${this.selectedCharacter}_attack3`, 14);
   }
 
   /**
@@ -333,14 +351,14 @@ class ArenaScene extends Phaser.Scene {
     const groundY = CONFIG.attacker.yPosition;
     const targetX = this.targetXInFrontOfThanos(); // try 30; change to taste
     this.tweens.killTweensOf(this.attacker);
-    this.attacker.play("fighter_run_anim", true);
+    this.attacker.play(`${this.selectedCharacter}_run_anim`, true);
     this.tweens.add({
       targets: this.attacker,
       x: targetX,
       duration: CONFIG.attacker.animation.duration,
       ease: CONFIG.attacker.animation.ease,
       onComplete: () => {
-        this.attacker.play("fighter_attack2_anim", true);
+        this.attacker.play(`${this.selectedCharacter}_attack2_anim`, true);
 
         // light hit feedback only
         this.time.delayedCall(150, () => {
@@ -366,7 +384,7 @@ class ArenaScene extends Phaser.Scene {
     const groundY = CONFIG.attacker.yPosition;
 
     // Start Attack1 and PAUSE on 3rd frame
-    this.attacker.play("fighter_attack1_anim", true);
+    this.attacker.play(`${this.selectedCharacter}_attack1_anim`, true);
 
     this.tweens.killTweensOf(this.attacker); // ensure no leftover tween
     const targetX = this.targetXInFrontOfThanos();
@@ -426,9 +444,9 @@ class ArenaScene extends Phaser.Scene {
       y: this.getGroundY(),
       duration: CONFIG.attacker.animation.duration,
       ease: CONFIG.attacker.animation.ease,
-      onStart: () => this.attacker.play("fighter_run_anim", true),
+      onStart: () => this.attacker.play(`${this.selectedCharacter}_run_anim`, true),
       onComplete: () => {
-        this.attacker.play("fighter_walk_anim", true);
+        this.attacker.play(`${this.selectedCharacter}_walk_anim`, true);
         this.isBusy = false;
       },
     });

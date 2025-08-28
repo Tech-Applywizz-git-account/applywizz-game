@@ -399,7 +399,7 @@ const Settings: React.FC = () => {
                       marginBottom: spacing.xs,
                     }}
                   >
-                    Premium Avatar #{selectedAvatar.id}
+                    Avatar #{selectedAvatar.id}
                   </h4>
                   <p
                     style={{
@@ -409,7 +409,7 @@ const Settings: React.FC = () => {
                       marginBottom: spacing.xs,
                     }}
                   >
-                    High-quality avatar • Personalized style
+                    Your selected avatar
                   </p>
                   <div
                     style={{

@@ -96,10 +96,13 @@ const AvatarSelection: React.FC = () => {
         style={{
           flex: 1,
           marginLeft: window.innerWidth >= 1024 ? "280px" : "0",
+          marginRight: window.innerWidth >= 1024 ? spacing.lg : "0", // Prevent content from touching right edge
+          minHeight: "100vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: spacing.lg,
+          transition: "margin-left 0.3s ease", // Smooth transition for sidebar margin
         }}
       >
         <div
@@ -424,20 +427,7 @@ const AvatarSelection: React.FC = () => {
                         #{selectedAvatar.id}
                       </span>
                     </p>
-                    <p
-                      style={{
-                        fontSize: "0.9rem",
-                        color: colors.textSecondary,
-                        margin: 0,
-                      }}
-                    >
-                      Style:{" "}
-                      <span
-                        style={{ color: colors.primary, fontWeight: "600" }}
-                      >
-                        Premium Avatar
-                      </span>
-                    </p>
+
                   </motion.div>
                 )}
 

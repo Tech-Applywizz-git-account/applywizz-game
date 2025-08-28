@@ -20,6 +20,7 @@ import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
 import { getDisplayAvatar } from "../utils/avatarUtils";
+import { getSelectedCharacterId } from "../utils/avatarToCharacterMapping";
 
 interface UnderConstructionProps {
   title: string;
@@ -1092,10 +1093,13 @@ export const Spaces: React.FC = () => {
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
+    // Get the selected character for the current user
+    const selectedCharacter = getSelectedCharacterId();
+    
     if (topFourData && Array.isArray(topFourData.users)) {
       // Extract usernames from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
-      const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
+      const characterIds = [selectedCharacter, "shinobi", "samurai2", "samuraiArcher"];
 
       return users.map((user: any, index: number) => ({
         uname: user.username || `User${index + 1}`,
@@ -1104,8 +1108,9 @@ export const Spaces: React.FC = () => {
     }
 
     // Default fallback data for career associates or when API fails
+    // First player uses selected character
     return [
-      { uname: "u1", characterId: "samurai" },
+      { uname: "You", characterId: selectedCharacter },
       { uname: "u2", characterId: "shinobi" },
       { uname: "u3", characterId: "samurai2" },
       { uname: "u4", characterId: "samuraiArcher" },
