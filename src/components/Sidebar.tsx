@@ -9,6 +9,7 @@ import {
   Grid3X3,
   Menu,
   X,
+  ShoppingCart,
   LucideIcon,
 } from "lucide-react";
 import Logo from "./Logo";
@@ -31,6 +32,7 @@ const Sidebar: React.FC = () => {
 
   const navigationItems: NavigationItem[] = [
     { id: "home", label: "Dashboard", icon: Home, path: "/dashboard" },
+    { id: "marketplace", label: "Avatar Store", icon: ShoppingCart, path: "/marketplace" },
     {
       id: "leaderboard",
       label: "Leaderboard",
