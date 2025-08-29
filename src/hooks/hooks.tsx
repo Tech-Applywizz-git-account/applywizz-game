@@ -22,3 +22,20 @@ export const useBackendQuery = (key: any, endpoint: string) => {
     refetchInterval: 10000,
   });
 };
+
+// Hook for fetching coins and XP data
+export const useCoinsXP = () => {
+  const { token } = useAuthContext();
+  return useQuery({
+    queryKey: ['coinsxp'],
+    queryFn: async () => await backendRequest('/coinsxp', token as string),
+    enabled: Boolean(token),
+    staleTime: 30000, // Cache for 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+    // Fallback data when query fails
+    retry: false,
+    onError: (error) => {
+      console.log('Coins/XP endpoint failed, using fallback values', error);
+    }
+  });
+};

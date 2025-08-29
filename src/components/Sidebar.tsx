@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   LucideIcon,
+  ShoppingCart,
 } from "lucide-react";
 import Logo from "./Logo";
 import { colors, fonts, spacing } from "../utils/theme";
@@ -38,6 +39,7 @@ const Sidebar: React.FC = () => {
       path: "/leaderboard",
     },
     { id: "spaces", label: "Spaces", icon: Grid3X3, path: "/spaces" },
+    { id: "marketplace", label: "Marketplace", icon: ShoppingCart, path: "/marketplace" },
     { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
   ];
 
