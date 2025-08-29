@@ -1,16 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Target, TrendingUp, Calendar, Trophy, Coins, ShoppingCart, LucideIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Target, TrendingUp, Calendar, Trophy, LucideIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PhaserThanosGame from "../components/PhaserThanosGame";
 import { Card, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useBackendQuery } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
-import { getCoins, getSelectedAvatar } from "../utils/coinSystem";
-import { AVATAR_CATALOG } from "../types/avatarTypes";
 import {
   RoleFallbackUI,
   ErrorUI,
@@ -321,133 +317,6 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   );
 };
 
-/**
- * User info card showing coins and current avatar
- */
-const UserInfoCard: React.FC = () => {
-  const navigate = useNavigate();
-  const [coins, setCoins] = useState(getCoins());
-  const [selectedAvatar, setSelectedAvatar] = useState(getSelectedAvatar());
-
-  useEffect(() => {
-    // Refresh data when component mounts or page becomes visible
-    const updateData = () => {
-      setCoins(getCoins());
-      setSelectedAvatar(getSelectedAvatar());
-    };
-
-    updateData();
-    
-    // Listen for storage changes (when user purchases in marketplace)
-    const handleStorageChange = () => {
-      updateData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('focus', updateData);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', updateData);
-    };
-  }, []);
-
-  const currentAvatar = AVATAR_CATALOG[selectedAvatar as keyof typeof AVATAR_CATALOG];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.2 }}
-    >
-      <Card>
-        <CardContent style={{ 
-          padding: spacing.lg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: spacing.lg,
-        }}>
-          {/* Avatar info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-            <div style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              border: `2px solid ${colors.primary}`,
-              backgroundColor: colors.background,
-            }}>
-              <img
-                src={currentAvatar?.previewImage || '/assets/avatars/Fighter/Idle.png'}
-                alt={currentAvatar?.name || 'Avatar'}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-              />
-            </div>
-            <div>
-              <h3 style={{
-                margin: 0,
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                color: colors.textPrimary,
-              }}>
-                {currentAvatar?.name || 'Fighter'}
-              </h3>
-              <p style={{
-                margin: 0,
-                fontSize: '0.9rem',
-                color: colors.textSecondary,
-                textTransform: 'capitalize',
-              }}>
-                {currentAvatar?.rarity || 'common'} • Active
-              </p>
-            </div>
-          </div>
-
-          {/* Coins and marketplace button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.lg }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: spacing.sm,
-              padding: `${spacing.sm} ${spacing.md}`,
-              backgroundColor: colors.primary + '10',
-              borderRadius: '8px',
-              border: `1px solid ${colors.primary}30`,
-            }}>
-              <Coins size={20} color={colors.primary} />
-              <span style={{
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                color: colors.primary,
-              }}>
-                {coins.toLocaleString()}
-              </span>
-            </div>
-
-            <Button
-              onClick={() => navigate('/marketplace')}
-              variant="outline"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: spacing.xs,
-              }}
-            >
-              <ShoppingCart size={16} />
-              Avatar Store
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-};
-
 const Dashboard: React.FC = () => {
   const { scrollY } = useScroll();
   const progressY = useTransform(scrollY, [200, 500], [100, 0]);
@@ -690,12 +559,6 @@ const Dashboard: React.FC = () => {
               Ready to balance productivity and achieve perfectly balanced
               goals?
             </motion.p>
-            
-            {/* User Info Card */}
-            <div style={{ marginBottom: spacing.xl }}>
-              <UserInfoCard />
-            </div>
-            
             <h2
               style={{
                 fontSize: window.innerWidth >= 768 ? "2rem" : "1.5rem",
