@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Upload, Palette } from "lucide-react";
+import { Settings as SettingsIcon, Upload, Palette, Coins, Star } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -15,7 +15,7 @@ import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar"
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useAuthContext, useBackendQuery } from "../hooks/hooks";
+import { useAuthContext, useBackendQuery, useCoinsXP } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import { getStoredAvatar, storeAvatar, getDisplayAvatar } from "../utils/avatarUtils";
 import { CareerAssociateOnly, NonCareerAssociateOnly } from "../components/RoleGuards";
@@ -64,6 +64,13 @@ const Settings: React.FC = () => {
     isLoading: userLoading,
     isError: userError,
   } = useBackendQuery(["user-info"], "/user-info");
+
+  // Fetch coins and XP data
+  const { data: coinsXPData, isLoading: coinsLoading, error: coinsError } = useCoinsXP();
+
+  // Fallback values when API fails
+  const userCoins = coinsXPData?.coins ?? 500;
+  const userXP = coinsXPData?.xp ?? 1250;
 
   const chartExists = Array.isArray((chartData as any)?.user_data);
 
@@ -200,9 +207,133 @@ const Settings: React.FC = () => {
                 >
                   ({(userData as any)?.team})
                 </p>
+
+                {/* Coins & XP Display */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: spacing.lg,
+                    marginTop: spacing.lg,
+                  }}
+                >
+                  <motion.div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: spacing.sm,
+                      padding: spacing.md,
+                      backgroundColor: `${colors.warning}10`,
+                      borderRadius: "8px",
+                    }}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Coins size={20} color={colors.warning} />
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "1.1rem",
+                          fontWeight: "600",
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        {coinsLoading ? "..." : userCoins.toLocaleString()}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: colors.textSecondary,
+                        }}
+                      >
+                        Coins
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: spacing.sm,
+                      padding: spacing.md,
+                      backgroundColor: `${colors.primary}10`,
+                      borderRadius: "8px",
+                    }}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Star size={20} color={colors.primary} />
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "1.1rem",
+                          fontWeight: "600",
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        {coinsLoading ? "..." : userXP.toLocaleString()}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: colors.textSecondary,
+                        }}
+                      >
+                        XP
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Error handling for coins/XP */}
+                {coinsError && (
+                  <motion.div
+                    style={{
+                      marginTop: spacing.md,
+                      padding: spacing.sm,
+                      backgroundColor: `${colors.warning}10`,
+                      borderRadius: "6px",
+                      border: `1px solid ${colors.warning}30`,
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        color: colors.textSecondary,
+                        fontSize: "0.8rem",
+                        textAlign: "center",
+                      }}
+                    >
+                      ⚠️ Using fallback values. API endpoint /api/v1/coinsxp not available.
+                    </p>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </Card>
+
+          {/* Error handling for coins/XP at page level */}
+          {coinsError && (
+            <Card
+              style={{
+                padding: spacing.md,
+                marginBottom: spacing.lg,
+                backgroundColor: `${colors.warning}10`,
+                border: `1px solid ${colors.warning}30`,
+              }}
+            >
+              <p style={{ margin: 0, color: colors.textSecondary, fontSize: "0.9rem" }}>
+                📊 <strong>API Status:</strong> Coins and XP endpoint (/api/v1/coinsxp) is not responding. 
+                Fallback values are displayed: {userCoins.toLocaleString()} coins, {userXP.toLocaleString()} XP.
+              </p>
+            </Card>
+          )}
 
           {/* Avatar Selection Section - For Non-Career Associates */}
           <NonCareerAssociateOnly>

@@ -103,16 +103,19 @@ class ArenaScene extends Phaser.Scene {
   preload(): void {
     this.load.image("thanos", "/assets/thanos.png");
 
-    // Fighter sprites
-    this.load.spritesheet("fighter_idle", "/assets/avatars/Fighter/Idle.png", {
+    // Get selected sprite from localStorage, fallback to Fighter
+    const selectedSprite = localStorage.getItem('selectedSprite') || 'Fighter';
+
+    // Load selected sprite sheets
+    this.load.spritesheet("fighter_idle", `/assets/avatars/${selectedSprite}/Idle.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_walk", "/assets/avatars/Fighter/Walk.png", {
+    this.load.spritesheet("fighter_walk", `/assets/avatars/${selectedSprite}/Walk.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_run", "/assets/avatars/Fighter/Run.png", {
+    this.load.spritesheet("fighter_run", `/assets/avatars/${selectedSprite}/Run.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
@@ -120,7 +123,7 @@ class ArenaScene extends Phaser.Scene {
     // Attack sprites
     this.load.spritesheet(
       "fighter_attack1",
-      "/assets/avatars/Fighter/Attack_1.png",
+      `/assets/avatars/${selectedSprite}/Attack_1.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -128,7 +131,7 @@ class ArenaScene extends Phaser.Scene {
     );
     this.load.spritesheet(
       "fighter_attack2",
-      "/assets/avatars/Fighter/Attack_2.png",
+      `/assets/avatars/${selectedSprite}/Attack_2.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -136,7 +139,7 @@ class ArenaScene extends Phaser.Scene {
     );
     this.load.spritesheet(
       "fighter_attack3",
-      "/assets/avatars/Fighter/Attack_3.png",
+      `/assets/avatars/${selectedSprite}/Attack_3.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
