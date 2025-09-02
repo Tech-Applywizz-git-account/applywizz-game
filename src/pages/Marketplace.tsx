@@ -6,6 +6,7 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useCoinsXP } from "../hooks/hooks";
+import { getSafeCharacterId, getFallbackIdlePath } from "../utils/characterUtils";
 
 // Sprite data structure
 interface SpriteData {
@@ -83,15 +84,23 @@ const SpriteCard: React.FC<SpriteCardProps> = ({ sprite, userCoins, onPurchase }
 
       preload() {
         try {
+          const safeSprite = getSafeCharacterId(this.spriteId);
           this.load.spritesheet(
             `${this.spriteId}_idle`,
-            `/assets/avatars/${this.spriteId}/Idle.png`,
+            `/assets/characters/${safeSprite}/Idle.png`,
+            { frameWidth: 128, frameHeight: 128 }
+          );
+          
+          // Fallback spritesheet in case the main one fails
+          this.load.spritesheet(
+            'fallback_idle',
+            getFallbackIdlePath(),
             { frameWidth: 128, frameHeight: 128 }
           );
           
           // Add error handling for failed loads
           this.load.on('loaderror', (file: any) => {
-            console.warn(`Failed to load sprite: ${file.src}`);
+            console.warn(`Failed to load sprite: ${file.src}, will use fallback`);
           });
         } catch (error) {
           console.error(`Error loading sprite sheet for ${this.spriteId}:`, error);
@@ -100,39 +109,43 @@ const SpriteCard: React.FC<SpriteCardProps> = ({ sprite, userCoins, onPurchase }
 
       create() {
         try {
-          // Check if texture was loaded successfully
-          if (!this.textures.exists(`${this.spriteId}_idle`)) {
-            console.warn(`Texture ${this.spriteId}_idle not found, skipping animation`);
-            return;
+          let spriteKey = `${this.spriteId}_idle`;
+          let animKey = `${this.spriteId}_idle_anim`;
+          
+          // Check if texture was loaded successfully, use fallback if not
+          if (!this.textures.exists(spriteKey)) {
+            console.warn(`Texture ${spriteKey} not found, using fallback`);
+            spriteKey = 'fallback_idle';
+            animKey = 'fallback_idle_anim';
           }
 
           // Create sprite at center
           this.spriteObj = this.add.sprite(
             this.cameras.main.width / 2,
             this.cameras.main.height / 2,
-            `${this.spriteId}_idle`
+            spriteKey
           );
 
           // Scale to fit card
           this.spriteObj.setScale(0.8);
 
           // Create idle animation if it doesn't exist
-          if (!this.anims.exists(`${this.spriteId}_idle_anim`)) {
+          if (!this.anims.exists(animKey)) {
             try {
               this.anims.create({
-                key: `${this.spriteId}_idle_anim`,
-                frames: this.anims.generateFrameNumbers(`${this.spriteId}_idle`),
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(spriteKey),
                 frameRate: 8,
                 repeat: -1,
               });
             } catch (animError) {
-              console.warn(`Failed to create animation for ${this.spriteId}:`, animError);
+              console.warn(`Failed to create animation for ${spriteKey}:`, animError);
               return;
             }
           }
 
           // Play animation
-          this.spriteObj.play(`${this.spriteId}_idle_anim`);
+          this.spriteObj.play(animKey);
         } catch (error) {
           console.error(`Error creating sprite scene for ${this.spriteId}:`, error);
         }

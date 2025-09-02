@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { getCharacterIdlePath, getFallbackIdlePath } from '../utils/characterUtils';
 
 interface AvatarProps {
-  /** Character ID that maps to folder name in /assets/avatars */
+  /** Character ID that maps to folder name in /assets/characters */
   id: string;
   /** Size of the avatar in pixels */
   size?: number;
@@ -18,11 +19,13 @@ interface AvatarProps {
   animationDelay?: number;
   /** Custom class name */
   className?: string;
+  /** Whether to show selection indicators (borders, checkmarks) */
+  showSelectionIndicators?: boolean;
 }
 
-// Map character IDs to Idle sprite path
+// Map character IDs to Idle sprite path using the character utility
 const getCharacterImagePath = (id: string): string => {
-  return `/assets/avatars/${id}/Idle.png`;
+  return getCharacterIdlePath(id);
 };
 
 const Avatar: React.FC<AvatarProps> = ({
@@ -34,6 +37,7 @@ const Avatar: React.FC<AvatarProps> = ({
   showStatus = false,
   animationDelay = 0,
   className = '',
+  showSelectionIndicators = true,
 }) => {
   const characterPath = getCharacterImagePath(id);
 
@@ -44,9 +48,9 @@ const Avatar: React.FC<AvatarProps> = ({
     overflow: 'hidden',
     cursor: onClick ? 'pointer' : 'default',
     position: 'relative',
-    border: isSelected ? '3px solid #8B5CF6' : '3px solid transparent',
+    border: isSelected && showSelectionIndicators ? '3px solid #8B5CF6' : '3px solid transparent',
     transition: 'all 0.3s ease',
-    boxShadow: isSelected 
+    boxShadow: isSelected && showSelectionIndicators 
       ? '0 8px 32px rgba(139, 92, 246, 0.4)' 
       : '0 4px 16px rgba(0, 0, 0, 0.1)',
     ...style,
@@ -83,12 +87,12 @@ const Avatar: React.FC<AvatarProps> = ({
         onError={(e) => {
           // Fallback to a default character if image fails to load
           const target = e.target as HTMLImageElement;
-          target.src = '/assets/avatars/Girl_1/Idle.png';
+          target.src = getFallbackIdlePath();
         }}
       />
       
       {/* Selection Indicator */}
-      {isSelected && (
+      {isSelected && showSelectionIndicators && (
         <motion.div
           style={{
             position: 'absolute',

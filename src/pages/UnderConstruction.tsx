@@ -250,6 +250,7 @@ export const Settings: React.FC = () => {
                 id={getDisplayAvatar().id}
                 size={120}
                 showStatus={true}
+                showSelectionIndicators={false}
                 style={{
                   boxShadow: `0 8px 32px ${colors.primary}40`,
                 }}
@@ -764,6 +765,7 @@ export const Leaderboard: React.FC = () => {
                 <Avatar
                   id={getDisplayAvatar().id}
                   size={32}
+                  showSelectionIndicators={false}
                   style={{
                     border: `2px solid ${colors.primary}`,
                   }}

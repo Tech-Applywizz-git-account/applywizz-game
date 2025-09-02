@@ -95,6 +95,7 @@ const Settings: React.FC = () => {
         id={displayAvatar.id}
         size={120}
         showStatus={true}
+        showSelectionIndicators={false}
         style={{
           boxShadow: `0 8px 32px rgba(139, 92, 246, 0.4)`,
         }}
@@ -517,6 +518,7 @@ const Settings: React.FC = () => {
                 <Avatar
                   id={selectedAvatar.id}
                   size={60}
+                  showSelectionIndicators={false}
                   style={{
                     boxShadow: `0 4px 12px rgba(139, 92, 246, 0.4)`,
                   }}

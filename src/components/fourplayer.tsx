@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./../components/ui/card.tsx";
+import { getSafeCharacterId, getCharacterSpritePath } from "../utils/characterUtils";
 
 /* ---------------------- Types ---------------------- */
 type SlotId = "TL" | "TR" | "BR" | "BL";
@@ -33,7 +34,7 @@ const CHAR_FOLDER: Record<CharacterId, string> = {
   samurai: "Pyromancer_1",
   samurai2: "Pyromancer_2",
   samurai3: "Pyromancer_3",
-  samuraiArcher: "Wanderer",
+  samuraiArcher: "Wanderer Magican", // Fixed: was "Wanderer", now matches actual directory
 };
 
 /* ---------------------- Config ---------------------- */
@@ -153,9 +154,16 @@ class ArenaScene extends Phaser.Scene {
     this.load.audio("sfx_slash", "assets/Sounds/slash.mp3");
     this.load.audio("sfx_impact", "assets/Sounds/impact.mp3");
 
-    // only the needed characters
+    // only the needed characters with fallback support
     [...new Set(this.players.map((p) => p.characterId))].forEach((id) => {
-      const base = `assets/avatars/${CHAR_FOLDER[id]}`;
+      const characterFolder = getSafeCharacterId(CHAR_FOLDER[id]);
+      const base = `assets/characters/${characterFolder}`;
+      
+      // Add error handling for sprite loading
+      this.load.on('loaderror', (file: any) => {
+        console.warn(`Failed to load sprite: ${file.src}, will use default character`);
+      });
+      
       this.load.spritesheet(`${id}_idle`, `${base}/Idle.png`, {
         frameWidth: 128,
         frameHeight: 128,

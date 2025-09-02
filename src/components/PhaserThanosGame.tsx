@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import { Card } from "./ui/card";
+import { getSafeCharacterId } from "../utils/characterUtils";
 
 interface ThanosGameProps {
   isThanosDead: boolean;
@@ -105,17 +106,23 @@ class ArenaScene extends Phaser.Scene {
 
     // Get selected sprite from localStorage, fallback to Girl_1
     const selectedSprite = localStorage.getItem('selectedSprite') || 'Girl_1';
+    const safeSprite = getSafeCharacterId(selectedSprite);
 
-    // Load selected sprite sheets
-    this.load.spritesheet("fighter_idle", `/assets/avatars/${selectedSprite}/Idle.png`, {
+    // Add error handling for sprite loading
+    this.load.on('loaderror', (file: any) => {
+      console.warn(`Failed to load sprite: ${file.src}, will use default character`);
+    });
+
+    // Load selected sprite sheets with correct path
+    this.load.spritesheet("fighter_idle", `/assets/characters/${safeSprite}/Idle.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_walk", `/assets/avatars/${selectedSprite}/Walk.png`, {
+    this.load.spritesheet("fighter_walk", `/assets/characters/${safeSprite}/Walk.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
-    this.load.spritesheet("fighter_run", `/assets/avatars/${selectedSprite}/Run.png`, {
+    this.load.spritesheet("fighter_run", `/assets/characters/${safeSprite}/Run.png`, {
       frameWidth: 128,
       frameHeight: 128,
     });
@@ -123,7 +130,7 @@ class ArenaScene extends Phaser.Scene {
     // Attack sprites
     this.load.spritesheet(
       "fighter_attack1",
-      `/assets/avatars/${selectedSprite}/Attack_1.png`,
+      `/assets/characters/${safeSprite}/Attack_1.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -131,7 +138,7 @@ class ArenaScene extends Phaser.Scene {
     );
     this.load.spritesheet(
       "fighter_attack2",
-      `/assets/avatars/${selectedSprite}/Attack_2.png`,
+      `/assets/characters/${safeSprite}/Attack_2.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
@@ -139,7 +146,7 @@ class ArenaScene extends Phaser.Scene {
     );
     this.load.spritesheet(
       "fighter_attack3",
-      `/assets/avatars/${selectedSprite}/Attack_3.png`,
+      `/assets/characters/${safeSprite}/Attack_3.png`,
       {
         frameWidth: 128,
         frameHeight: 128,
