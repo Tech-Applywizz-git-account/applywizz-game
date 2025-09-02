@@ -326,6 +326,9 @@ const Marketplace: React.FC = () => {
     // Store selected sprite in localStorage for PhaserThanosGame
     localStorage.setItem('selectedSprite', spriteId);
     
+    // Also update avatar selection for consistency
+    localStorage.setItem('avatar', JSON.stringify({ id: spriteId }));
+    
     // TODO: Make API call to purchase sprite and deduct coins
     console.log(`Purchased ${sprite.displayName} for ${sprite.price} coins`);
   };

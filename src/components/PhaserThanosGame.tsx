@@ -103,8 +103,8 @@ class ArenaScene extends Phaser.Scene {
   preload(): void {
     this.load.image("thanos", "/assets/thanos.png");
 
-    // Get selected sprite from localStorage, fallback to Fighter
-    const selectedSprite = localStorage.getItem('selectedSprite') || 'Fighter';
+    // Get selected sprite from localStorage, fallback to Girl_1
+    const selectedSprite = localStorage.getItem('selectedSprite') || 'Girl_1';
 
     // Load selected sprite sheets
     this.load.spritesheet("fighter_idle", `/assets/avatars/${selectedSprite}/Idle.png`, {

@@ -2,8 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface AvatarProps {
-  /** Avatar ID (1-12) that maps to avatar_XX.png */
-  id: number;
+  /** Character ID that maps to folder name in /assets/avatars */
+  id: string;
   /** Size of the avatar in pixels */
   size?: number;
   /** Whether to show the avatar as selected */
@@ -20,12 +20,9 @@ interface AvatarProps {
   className?: string;
 }
 
-// Map avatar IDs to filename format
-const getAvatarImagePath = (id: number): string => {
-  // Ensure ID is within valid range (1-12)
-  const validId = Math.max(1, Math.min(12, id));
-  const paddedId = validId.toString().padStart(2, '0');
-  return `/assets/avatar_${paddedId}.png`;
+// Map character IDs to Idle sprite path
+const getCharacterImagePath = (id: string): string => {
+  return `/assets/avatars/${id}/Idle.png`;
 };
 
 const Avatar: React.FC<AvatarProps> = ({
@@ -38,7 +35,7 @@ const Avatar: React.FC<AvatarProps> = ({
   animationDelay = 0,
   className = '',
 }) => {
-  const avatarPath = getAvatarImagePath(id);
+  const characterPath = getCharacterImagePath(id);
 
   const containerStyle: React.CSSProperties = {
     width: `${size}px`,
@@ -79,10 +76,15 @@ const Avatar: React.FC<AvatarProps> = ({
       }}
     >
       <img
-        src={avatarPath}
-        alt={`Avatar ${id}`}
+        src={characterPath}
+        alt={`Character ${id}`}
         style={imageStyle}
         loading="lazy"
+        onError={(e) => {
+          // Fallback to a default character if image fails to load
+          const target = e.target as HTMLImageElement;
+          target.src = '/assets/avatars/Girl_1/Idle.png';
+        }}
       />
       
       {/* Selection Indicator */}
@@ -146,12 +148,20 @@ const Avatar: React.FC<AvatarProps> = ({
 
 export default Avatar;
 
-// Utility function to get all available avatar IDs
-export const getAvailableAvatarIds = (): number[] => {
-  return Array.from({ length: 12 }, (_, i) => i + 1);
+// Utility function to get all available character IDs from marketplace
+export const getAvailableCharacterIds = (): string[] => {
+  return [
+    'Amazon_1', 'Amazon_2', 'Amazon_3', 'Fire Wizard', 'Girl_1', 'Girl_2', 'Girl_3',
+    'Gladiator_1', 'Gladiator_2', 'Gladiator_3', 'Karasu_tengu', 'Kitsune',
+    'Knight_1', 'Knight_2', 'Knight_3', 'Kunoichi', 'Lightning Mage',
+    'Man_1', 'Man_2', 'Man_3', 'Ninja_Monk', 'Ninja_Peasant',
+    'Pyromancer_1', 'Pyromancer_2', 'Pyromancer_3', 'Wanderer Magican', 'Wild Zombie',
+    'Witch_1', 'Witch_2', 'Witch_3', 'Yamabushi_tengu', 'Zombie Man', 'Zombie Woman',
+    'Zombie_1', 'Zombie_2', 'Zombie_3'
+  ];
 };
 
-// Type for avatar selection
+// Type for character selection (updated to use string IDs)
 export interface AvatarData {
-  id: number;
+  id: string;
 }
