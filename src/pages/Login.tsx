@@ -127,7 +127,7 @@ const Login = () => {
     setSuccessMsg(null);
 
     const baseUrl = import.meta.env.VITE_BACKEND_URL as string | undefined;
-
+    console.log("Using backend URL:", baseUrl);
     try {
       const res = await fetch(`${baseUrl}/api/v1/login`, {
         method: "POST",
