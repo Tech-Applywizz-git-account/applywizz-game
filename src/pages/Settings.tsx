@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Sidebar from "../components/Sidebar";
-import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar";
+import Avatar, { AvatarData, getAvailableCharacterIds } from "../components/Avatar";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
@@ -44,11 +44,13 @@ const Settings: React.FC = () => {
     }
   }, []);
 
-  // Handle avatar selection for non-career associates
-  const handleAvatarSelect = (avatarId: number) => {
-    const newAvatar: AvatarData = { id: avatarId };
+  // Handle character selection for non-career associates
+  const handleAvatarSelect = (characterId: string) => {
+    const newAvatar: AvatarData = { id: characterId };
     setSelectedAvatar(newAvatar);
     storeAvatar(newAvatar);
+    // Also sync with game sprite selection
+    localStorage.setItem('selectedSprite', characterId);
     setIsAvatarSelectionOpen(false);
   };
 
@@ -425,21 +427,21 @@ const Settings: React.FC = () => {
                       borderRadius: "8px",
                     }}
                   >
-                    {getAvailableAvatarIds().map((avatarId) => (
+                    {getAvailableCharacterIds().map((characterId) => (
                       <motion.div
-                        key={avatarId}
+                        key={characterId}
                         style={{ textAlign: "center" }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <Avatar
-                          id={avatarId}
+                          id={characterId}
                           size={64}
-                          isSelected={selectedAvatar?.id === avatarId}
-                          onClick={() => handleAvatarSelect(avatarId)}
+                          isSelected={selectedAvatar?.id === characterId}
+                          onClick={() => handleAvatarSelect(characterId)}
                           style={{
                             cursor: "pointer",
-                            border: selectedAvatar?.id === avatarId 
+                            border: selectedAvatar?.id === characterId 
                               ? `3px solid ${colors.primary}` 
                               : `3px solid transparent`,
                             transition: "border-color 0.2s ease",

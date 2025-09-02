@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Avatar, {
-  getAvailableAvatarIds,
+  getAvailableCharacterIds,
   AvatarData,
 } from "../components/Avatar";
 import { Button } from "../components/ui/button";
@@ -26,7 +26,7 @@ import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext } from "../hooks/hooks";
 import { backendPostRequest } from "../lib/backendRequest";
 
-const avatarIds = getAvailableAvatarIds();
+const characterIds = getAvailableCharacterIds();
 
 const AvatarSelection: React.FC = () => {
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarData | null>(null);
@@ -49,6 +49,8 @@ const AvatarSelection: React.FC = () => {
 
         // Store selected avatar in localStorage with the new simplified format
         localStorage.setItem("avatar", JSON.stringify(selectedAvatar));
+        // Also store as selectedSprite for game compatibility
+        localStorage.setItem("selectedSprite", selectedAvatar.id);
 
         // Navigate to dashboard
         navigate("/dashboard");
@@ -56,6 +58,8 @@ const AvatarSelection: React.FC = () => {
         console.error("Failed to save avatar:", error);
         // Continue to dashboard even if backend request fails
         localStorage.setItem("avatar", JSON.stringify(selectedAvatar));
+        // Also store as selectedSprite for game compatibility
+        localStorage.setItem("selectedSprite", selectedAvatar.id);
         navigate("/dashboard");
       } finally {
         setIsSubmitting(false);
@@ -69,9 +73,9 @@ const AvatarSelection: React.FC = () => {
     // Animate through random selections
     let count = 0;
     const interval = setInterval(() => {
-      const randomId = avatarIds[Math.floor(Math.random() * avatarIds.length)];
-      const randomAvatar: AvatarData = { id: randomId };
-      setSelectedAvatar(randomAvatar);
+      const randomId = characterIds[Math.floor(Math.random() * characterIds.length)];
+      const randomCharacter: AvatarData = { id: randomId };
+      setSelectedAvatar(randomCharacter);
       count++;
 
       if (count >= 8) {
@@ -200,7 +204,7 @@ const AvatarSelection: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
-              {avatarIds.map((id, index) => (
+              {characterIds.map((id, index) => (
                 <Avatar
                   key={id}
                   id={id}
@@ -312,12 +316,12 @@ const AvatarSelection: React.FC = () => {
                   }}
                 >
                   <Palette size={24} style={{ color: colors.primary }} />
-                  Avatar Preview
+                  Character Preview
                 </CardTitle>
                 <CardDescription style={{ fontSize: "1rem" }}>
                   {selectedAvatar
-                    ? "Great choice! This avatar will represent you."
-                    : "Select an avatar to see preview"}
+                    ? "Great choice! This character will represent you."
+                    : "Select a character to see preview"}
                 </CardDescription>
               </CardHeader>
 
@@ -417,11 +421,11 @@ const AvatarSelection: React.FC = () => {
                         marginBottom: spacing.xs,
                       }}
                     >
-                      Avatar:{" "}
+                      Character:{" "}
                       <span
                         style={{ color: colors.primary, fontWeight: "600" }}
                       >
-                        #{selectedAvatar.id}
+                        {selectedAvatar.id}
                       </span>
                     </p>
                     <p
@@ -435,7 +439,7 @@ const AvatarSelection: React.FC = () => {
                       <span
                         style={{ color: colors.primary, fontWeight: "600" }}
                       >
-                        Premium Avatar
+                        Premium Character
                       </span>
                     </p>
                   </motion.div>

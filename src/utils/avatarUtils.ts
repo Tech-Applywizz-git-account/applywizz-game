@@ -4,7 +4,7 @@
  */
 
 export interface AvatarData {
-  id: number;
+  id: string;
 }
 
 /**
@@ -18,10 +18,13 @@ export const getStoredAvatar = (): AvatarData | null => {
 
     const parsedAvatar = JSON.parse(storedAvatar);
     
-    // Handle both old format (with color/pattern) and new format (just id)
+    // Handle both old format (with id as number) and new format (with id as string)
     if (typeof parsedAvatar === "object" && parsedAvatar.id) {
-      return { id: parsedAvatar.id };
+      return { id: String(parsedAvatar.id) };
     } else if (typeof parsedAvatar === "number") {
+      // Convert old numbered avatar to first character for backward compatibility
+      return { id: 'Girl_1' };
+    } else if (typeof parsedAvatar === "string") {
       return { id: parsedAvatar };
     }
     
@@ -68,7 +71,7 @@ export const hasStoredAvatar = (): boolean => {
  * @returns Default avatar data
  */
 export const getDefaultAvatar = (): AvatarData => {
-  return { id: 1 };
+  return { id: 'Girl_1' };
 };
 
 /**
