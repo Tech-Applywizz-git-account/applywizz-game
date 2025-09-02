@@ -28,12 +28,12 @@ const DESIGN_H = 720;
 
 /* ---------------------- Assets map ---------------------- */
 const CHAR_FOLDER: Record<CharacterId, string> = {
-  fighter: "Fighter",
-  shinobi: "Shinobi",
-  samurai: "Samurai",
-  samurai2: "Samurai2",
-  samurai3: "Samurai3",
-  samuraiArcher: "SamuraiArcher",
+  fighter: "Man_1",
+  shinobi: "Ninja_Monk",
+  samurai: "Pyromancer_1",
+  samurai2: "Pyromancer_2",
+  samurai3: "Pyromancer_3",
+  samuraiArcher: "Wanderer",
 };
 
 /* ---------------------- Config ---------------------- */
@@ -343,7 +343,7 @@ class ArenaScene extends Phaser.Scene {
       .reverse();
     ensure(`${prefix}_walk_anim_rev`, `${prefix}_walk`, 12, -1, rev);
   }
-
+  
   private createAllAnims() {
     [...new Set(this.players.map((p) => p.characterId))].forEach((id) =>
       this.createAnimsFor(id)
