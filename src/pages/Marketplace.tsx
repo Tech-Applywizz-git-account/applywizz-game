@@ -13,30 +13,48 @@ interface SpriteData {
   name: string;
   displayName: string;
   price: number;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
   owned: boolean;
 }
 
-// Available sprites from assets/avatars
+// Available sprites from assets/avatars - matches actual directory structure
 const AVAILABLE_SPRITES: SpriteData[] = [
-  { id: 'Fighter', name: 'Fighter', displayName: 'Fighter', price: 100, rarity: 'common', owned: false },
-  { id: 'Girl_1', name: 'Girl_1', displayName: 'Warrior Girl', price: 150, rarity: 'common', owned: false },
-  { id: 'Pyromancer_1', name: 'Pyromancer_1', displayName: 'Fire Mage I', price: 200, rarity: 'rare', owned: false },
-  { id: 'Pyromancer_2', name: 'Pyromancer_2', displayName: 'Fire Mage II', price: 250, rarity: 'rare', owned: false },
-  { id: 'Pyromancer_3', name: 'Pyromancer_3', displayName: 'Fire Mage III', price: 300, rarity: 'epic', owned: false },
-  { id: 'Samurai', name: 'Samurai', displayName: 'Samurai', price: 400, rarity: 'epic', owned: false },
-  { id: 'Samurai2', name: 'Samurai2', displayName: 'Samurai Master', price: 500, rarity: 'epic', owned: false },
-  { id: 'Samurai3', name: 'Samurai3', displayName: 'Samurai Legend', price: 600, rarity: 'legendary', owned: false },
-  { id: 'SamuraiArcher', name: 'SamuraiArcher', displayName: 'Samurai Archer', price: 550, rarity: 'epic', owned: false },
-  { id: 'Shinobi', name: 'Shinobi', displayName: 'Shadow Ninja', price: 700, rarity: 'legendary', owned: false },
+  { id: 'Amazon_1', name: 'Amazon_1', displayName: 'Amazon Warrior I', price: 100, owned: false },
+  { id: 'Amazon_2', name: 'Amazon_2', displayName: 'Amazon Warrior II', price: 150, owned: false },
+  { id: 'Amazon_3', name: 'Amazon_3', displayName: 'Amazon Warrior III', price: 200, owned: false },
+  { id: 'Fire Wizard', name: 'Fire Wizard', displayName: 'Fire Wizard', price: 300, owned: false },
+  { id: 'Girl_1', name: 'Girl_1', displayName: 'Warrior Girl I', price: 120, owned: false },
+  { id: 'Girl_2', name: 'Girl_2', displayName: 'Warrior Girl II', price: 140, owned: false },
+  { id: 'Girl_3', name: 'Girl_3', displayName: 'Warrior Girl III', price: 160, owned: false },
+  { id: 'Gladiator_1', name: 'Gladiator_1', displayName: 'Gladiator I', price: 180, owned: false },
+  { id: 'Gladiator_2', name: 'Gladiator_2', displayName: 'Gladiator II', price: 200, owned: false },
+  { id: 'Gladiator_3', name: 'Gladiator_3', displayName: 'Gladiator III', price: 220, owned: false },
+  { id: 'Karasu_tengu', name: 'Karasu_tengu', displayName: 'Karasu Tengu', price: 400, owned: false },
+  { id: 'Kitsune', name: 'Kitsune', displayName: 'Kitsune Spirit', price: 350, owned: false },
+  { id: 'Knight_1', name: 'Knight_1', displayName: 'Knight I', price: 250, owned: false },
+  { id: 'Knight_2', name: 'Knight_2', displayName: 'Knight II', price: 300, owned: false },
+  { id: 'Knight_3', name: 'Knight_3', displayName: 'Knight III', price: 350, owned: false },
+  { id: 'Kunoichi', name: 'Kunoichi', displayName: 'Kunoichi Ninja', price: 450, owned: false },
+  { id: 'Lightning Mage', name: 'Lightning Mage', displayName: 'Lightning Mage', price: 320, owned: false },
+  { id: 'Man_1', name: 'Man_1', displayName: 'Warrior Man I', price: 110, owned: false },
+  { id: 'Man_2', name: 'Man_2', displayName: 'Warrior Man II', price: 130, owned: false },
+  { id: 'Man_3', name: 'Man_3', displayName: 'Warrior Man III', price: 150, owned: false },
+  { id: 'Ninja_Monk', name: 'Ninja_Monk', displayName: 'Ninja Monk', price: 380, owned: false },
+  { id: 'Ninja_Peasant', name: 'Ninja_Peasant', displayName: 'Ninja Peasant', price: 280, owned: false },
+  { id: 'Pyromancer_1', name: 'Pyromancer_1', displayName: 'Fire Mage I', price: 200, owned: false },
+  { id: 'Pyromancer_2', name: 'Pyromancer_2', displayName: 'Fire Mage II', price: 250, owned: false },
+  { id: 'Pyromancer_3', name: 'Pyromancer_3', displayName: 'Fire Mage III', price: 300, owned: false },
+  { id: 'Wanderer Magican', name: 'Wanderer Magican', displayName: 'Wanderer Magician', price: 270, owned: false },
+  { id: 'Wild Zombie', name: 'Wild Zombie', displayName: 'Wild Zombie', price: 180, owned: false },
+  { id: 'Witch_1', name: 'Witch_1', displayName: 'Witch I', price: 190, owned: false },
+  { id: 'Witch_2', name: 'Witch_2', displayName: 'Witch II', price: 240, owned: false },
+  { id: 'Witch_3', name: 'Witch_3', displayName: 'Witch III', price: 290, owned: false },
+  { id: 'Yamabushi_tengu', name: 'Yamabushi_tengu', displayName: 'Yamabushi Tengu', price: 420, owned: false },
+  { id: 'Zombie Man', name: 'Zombie Man', displayName: 'Zombie Man', price: 160, owned: false },
+  { id: 'Zombie Woman', name: 'Zombie Woman', displayName: 'Zombie Woman', price: 170, owned: false },
+  { id: 'Zombie_1', name: 'Zombie_1', displayName: 'Zombie I', price: 140, owned: false },
+  { id: 'Zombie_2', name: 'Zombie_2', displayName: 'Zombie II', price: 150, owned: false },
+  { id: 'Zombie_3', name: 'Zombie_3', displayName: 'Zombie III', price: 160, owned: false },
 ];
-
-const RARITY_COLORS = {
-  common: '#6B7280',
-  rare: '#3B82F6',
-  epic: '#8B5CF6',
-  legendary: '#F59E0B'
-};
 
 interface SpriteCardProps {
   sprite: SpriteData;
@@ -55,56 +73,94 @@ const SpriteCard: React.FC<SpriteCardProps> = ({ sprite, userCoins, onPurchase }
     let game: Phaser.Game | null = null;
 
     class IdlePreviewScene extends Phaser.Scene {
-      private sprite?: Phaser.GameObjects.Sprite;
+      private spriteObj?: Phaser.GameObjects.Sprite;
+      private spriteId: string;
+
+      constructor() {
+        super();
+        this.spriteId = sprite.id;
+      }
 
       preload() {
-        this.load.spritesheet(
-          `${sprite.id}_idle`,
-          `/assets/avatars/${sprite.id}/Idle.png`,
-          { frameWidth: 128, frameHeight: 128 }
-        );
+        try {
+          this.load.spritesheet(
+            `${this.spriteId}_idle`,
+            `/assets/avatars/${this.spriteId}/Idle.png`,
+            { frameWidth: 128, frameHeight: 128 }
+          );
+          
+          // Add error handling for failed loads
+          this.load.on('loaderror', (file: any) => {
+            console.warn(`Failed to load sprite: ${file.src}`);
+          });
+        } catch (error) {
+          console.error(`Error loading sprite sheet for ${this.spriteId}:`, error);
+        }
       }
 
       create() {
-        // Create sprite at center
-        this.sprite = this.add.sprite(
-          this.cameras.main.width / 2,
-          this.cameras.main.height / 2,
-          `${sprite.id}_idle`
-        );
+        try {
+          // Check if texture was loaded successfully
+          if (!this.textures.exists(`${this.spriteId}_idle`)) {
+            console.warn(`Texture ${this.spriteId}_idle not found, skipping animation`);
+            return;
+          }
 
-        // Scale to fit card
-        this.sprite.setScale(0.8);
+          // Create sprite at center
+          this.spriteObj = this.add.sprite(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            `${this.spriteId}_idle`
+          );
 
-        // Create idle animation
-        if (!this.anims.exists(`${sprite.id}_idle_anim`)) {
-          this.anims.create({
-            key: `${sprite.id}_idle_anim`,
-            frames: this.anims.generateFrameNumbers(`${sprite.id}_idle`),
-            frameRate: 8,
-            repeat: -1,
-          });
+          // Scale to fit card
+          this.spriteObj.setScale(0.8);
+
+          // Create idle animation if it doesn't exist
+          if (!this.anims.exists(`${this.spriteId}_idle_anim`)) {
+            try {
+              this.anims.create({
+                key: `${this.spriteId}_idle_anim`,
+                frames: this.anims.generateFrameNumbers(`${this.spriteId}_idle`),
+                frameRate: 8,
+                repeat: -1,
+              });
+            } catch (animError) {
+              console.warn(`Failed to create animation for ${this.spriteId}:`, animError);
+              return;
+            }
+          }
+
+          // Play animation
+          this.spriteObj.play(`${this.spriteId}_idle_anim`);
+        } catch (error) {
+          console.error(`Error creating sprite scene for ${this.spriteId}:`, error);
         }
-
-        // Play animation
-        this.sprite.play(`${sprite.id}_idle_anim`);
       }
     }
 
-    game = new Phaser.Game({
-      type: Phaser.CANVAS,
-      width: 120,
-      height: 120,
-      canvas: canvasRef.current,
-      scene: IdlePreviewScene,
-      physics: { default: 'arcade' },
-      backgroundColor: 'transparent',
-      parent: undefined,
-    });
+    try {
+      game = new Phaser.Game({
+        type: Phaser.CANVAS,
+        width: 120,
+        height: 120,
+        canvas: canvasRef.current,
+        scene: IdlePreviewScene,
+        physics: { default: 'arcade' },
+        backgroundColor: 'transparent',
+        parent: undefined,
+      });
+    } catch (error) {
+      console.error(`Failed to initialize Phaser game for ${sprite.id}:`, error);
+    }
 
     return () => {
       if (game) {
-        game.destroy(true);
+        try {
+          game.destroy(true);
+        } catch (error) {
+          console.warn(`Error destroying Phaser game for ${sprite.id}:`, error);
+        }
       }
     };
   }, [sprite.id]);
@@ -118,8 +174,8 @@ const SpriteCard: React.FC<SpriteCardProps> = ({ sprite, userCoins, onPurchase }
       <Card
         style={{
           padding: spacing.lg,
-          border: `2px solid ${RARITY_COLORS[sprite.rarity]}40`,
-          background: `linear-gradient(135deg, ${colors.surface} 0%, ${RARITY_COLORS[sprite.rarity]}10 100%)`,
+          border: `2px solid ${colors.border}`,
+          background: colors.surface,
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -170,32 +226,11 @@ const SpriteCard: React.FC<SpriteCardProps> = ({ sprite, userCoins, onPurchase }
               fontWeight: '600',
               color: colors.textPrimary,
               margin: 0,
-              marginBottom: spacing.xs,
+              marginBottom: spacing.md,
             }}
           >
             {sprite.displayName}
           </h3>
-          
-          <div
-            style={{
-              display: 'inline-block',
-              padding: `${spacing.xs} ${spacing.sm}`,
-              backgroundColor: `${RARITY_COLORS[sprite.rarity]}20`,
-              borderRadius: '4px',
-              marginBottom: spacing.md,
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: '600',
-                color: RARITY_COLORS[sprite.rarity],
-                textTransform: 'uppercase',
-              }}
-            >
-              {sprite.rarity}
-            </span>
-          </div>
 
           <div
             style={{
