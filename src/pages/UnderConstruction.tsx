@@ -1095,20 +1095,20 @@ export const Spaces: React.FC = () => {
     if (topFourData && Array.isArray(topFourData.users)) {
       // Extract usernames from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
-      const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
+      const characterIds = ["knight_1", "kunoichi", "knight_2", "amazon_1"];
 
       return users.map((user: any, index: number) => ({
         uname: user.username || `User${index + 1}`,
-        characterId: characterIds[index] || "samurai",
+        characterId: characterIds[index] || "knight_1",
       }));
     }
 
     // Default fallback data for career associates or when API fails
     return [
-      { uname: "u1", characterId: "samurai" },
-      { uname: "u2", characterId: "shinobi" },
-      { uname: "u3", characterId: "samurai2" },
-      { uname: "u4", characterId: "samuraiArcher" },
+      { uname: "u1", characterId: "knight_1" },
+      { uname: "u2", characterId: "kunoichi" },
+      { uname: "u3", characterId: "knight_2" },
+      { uname: "u4", characterId: "amazon_1" },
     ];
   };
 

@@ -6,12 +6,12 @@ import { Card } from "./../components/ui/card.tsx";
 type SlotId = "TL" | "TR" | "BR" | "BL";
 
 export type CharacterId =
-  | "fighter"
-  | "shinobi"
-  | "samurai"
-  | "samurai2"
-  | "samurai3"
-  | "samuraiArcher";
+  | "girl_1"
+  | "kunoichi"
+  | "knight_1"
+  | "knight_2"
+  | "ninja_monk"
+  | "amazon_1";
 
 export interface PlayerSpec {
   uname: string;
@@ -28,12 +28,12 @@ const DESIGN_H = 720;
 
 /* ---------------------- Assets map ---------------------- */
 const CHAR_FOLDER: Record<CharacterId, string> = {
-  fighter: "Fighter",
-  shinobi: "Shinobi",
-  samurai: "Samurai",
-  samurai2: "Samurai2",
-  samurai3: "Samurai3",
-  samuraiArcher: "SamuraiArcher",
+  girl_1: "Girl_1",
+  kunoichi: "Kunoichi", 
+  knight_1: "Knight_1",
+  knight_2: "Knight_2",
+  ninja_monk: "Ninja_Monk",
+  amazon_1: "Amazon_1",
 };
 
 /* ---------------------- Config ---------------------- */

@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface AvatarProps {
-  /** Avatar ID (1-12) that maps to avatar_XX.png */
+  /** Avatar ID (1-13) that maps to avatar_XX.png */
   id: number;
   /** Size of the avatar in pixels */
   size?: number;
@@ -22,8 +22,8 @@ interface AvatarProps {
 
 // Map avatar IDs to filename format
 const getAvatarImagePath = (id: number): string => {
-  // Ensure ID is within valid range (1-12)
-  const validId = Math.max(1, Math.min(12, id));
+  // Ensure ID is within valid range (1-13)
+  const validId = Math.max(1, Math.min(13, id));
   const paddedId = validId.toString().padStart(2, '0');
   return `/assets/avatar_${paddedId}.png`;
 };
@@ -148,7 +148,7 @@ export default Avatar;
 
 // Utility function to get all available avatar IDs
 export const getAvailableAvatarIds = (): number[] => {
-  return Array.from({ length: 12 }, (_, i) => i + 1);
+  return Array.from({ length: 13 }, (_, i) => i + 1);
 };
 
 // Type for avatar selection
