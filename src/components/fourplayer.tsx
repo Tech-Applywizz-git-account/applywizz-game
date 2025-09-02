@@ -153,33 +153,40 @@ class ArenaScene extends Phaser.Scene {
     this.load.audio("sfx_slash", "assets/Sounds/slash.mp3");
     this.load.audio("sfx_impact", "assets/Sounds/impact.mp3");
 
+    // Set up error handling for failed asset loads
+    this.load.on('loaderror', (file: any) => {
+      console.warn(`Failed to load asset: ${file.src}`);
+    });
+
     // only the needed characters
     [...new Set(this.players.map((p) => p.characterId))].forEach((id) => {
       const base = `assets/avatars/${CHAR_FOLDER[id]}`;
-      this.load.spritesheet(`${id}_idle`, `${base}/Idle.png`, {
-        frameWidth: 128,
-        frameHeight: 128,
-      });
-      this.load.spritesheet(`${id}_walk`, `${base}/Walk.png`, {
-        frameWidth: 128,
-        frameHeight: 128,
-      });
-      this.load.spritesheet(`${id}_run`, `${base}/Run.png`, {
-        frameWidth: 128,
-        frameHeight: 128,
-      });
-      this.load.spritesheet(`${id}_attack1`, `${base}/Attack_1.png`, {
-        frameWidth: 128,
-        frameHeight: 128,
-      });
-      this.load.spritesheet(`${id}_attack2`, `${base}/Attack_2.png`, {
-        frameWidth: 128,
-        frameHeight: 128,
-      });
-      this.load.spritesheet(`${id}_attack3`, `${base}/Attack_3.png`, {
-        frameWidth: 128,
-        frameHeight: 128,
-      });
+      const fallbackBase = `assets/avatars/Man_1`; // Default fallback character
+      
+      // Load each sprite type with fallback handling
+      const loadSpriteWithFallback = (spriteType: string, fileName: string) => {
+        try {
+          this.load.spritesheet(`${id}_${spriteType}`, `${base}/${fileName}`, {
+            frameWidth: 128,
+            frameHeight: 128,
+          });
+          
+          // Also preload fallback sprite in case primary fails
+          this.load.spritesheet(`${id}_${spriteType}_fallback`, `${fallbackBase}/${fileName}`, {
+            frameWidth: 128,
+            frameHeight: 128,
+          });
+        } catch (error) {
+          console.warn(`Error loading ${spriteType} sprite for ${id}:`, error);
+        }
+      };
+
+      loadSpriteWithFallback('idle', 'Idle.png');
+      loadSpriteWithFallback('walk', 'Walk.png');
+      loadSpriteWithFallback('run', 'Run.png');
+      loadSpriteWithFallback('attack1', 'Attack_1.png');
+      loadSpriteWithFallback('attack2', 'Attack_2.png');
+      loadSpriteWithFallback('attack3', 'Attack_3.png');
     });
   }
 
@@ -318,16 +325,40 @@ class ArenaScene extends Phaser.Scene {
       framesOverride: any = null
     ) => {
       if (this.anims.exists(key)) return;
+      
+      let actualSheetKey = sheetKey;
       let frames = framesOverride;
+      
+      // Check if the primary texture exists, otherwise use fallback
+      if (!this.textures.exists(sheetKey)) {
+        const fallbackKey = `${sheetKey}_fallback`;
+        if (this.textures.exists(fallbackKey)) {
+          console.warn(`Using fallback texture for ${sheetKey}`);
+          actualSheetKey = fallbackKey;
+        } else {
+          console.error(`Neither primary nor fallback texture exists for ${sheetKey}`);
+          return; // Skip creating animation if no valid texture
+        }
+      }
+      
       if (!frames) {
-        const tex = this.textures.get(sheetKey);
+        const tex = this.textures.get(actualSheetKey);
         const max = Math.max(0, (tex ? tex.frameTotal : 0) - 1);
-        frames = this.anims.generateFrameNumbers(sheetKey, {
+        if (max < 0) {
+          console.warn(`No frames available for texture ${actualSheetKey}`);
+          return;
+        }
+        frames = this.anims.generateFrameNumbers(actualSheetKey, {
           start: 0,
           end: max,
         });
       }
-      this.anims.create({ key, frames, frameRate, repeat });
+      
+      try {
+        this.anims.create({ key, frames, frameRate, repeat });
+      } catch (error) {
+        console.error(`Failed to create animation ${key}:`, error);
+      }
     };
 
     ensure(`${prefix}_idle_anim`, `${prefix}_idle`, 8, -1);
@@ -337,11 +368,19 @@ class ArenaScene extends Phaser.Scene {
     ensure(`${prefix}_attack2_anim`, `${prefix}_attack2`, 14, 0);
     ensure(`${prefix}_attack3_anim`, `${prefix}_attack3`, 14, 0);
 
-    const rev = this.anims
-      .generateFrameNumbers(`${prefix}_walk`)
-      .slice()
-      .reverse();
-    ensure(`${prefix}_walk_anim_rev`, `${prefix}_walk`, 12, -1, rev);
+    // Create reverse walk animation with fallback handling
+    const walkSheetKey = this.textures.exists(`${prefix}_walk`) ? `${prefix}_walk` : `${prefix}_walk_fallback`;
+    if (this.textures.exists(walkSheetKey)) {
+      try {
+        const rev = this.anims
+          .generateFrameNumbers(walkSheetKey)
+          .slice()
+          .reverse();
+        ensure(`${prefix}_walk_anim_rev`, walkSheetKey, 12, -1, rev);
+      } catch (error) {
+        console.warn(`Failed to create reverse walk animation for ${prefix}:`, error);
+      }
+    }
   }
   
   private createAllAnims() {
@@ -385,8 +424,25 @@ class ArenaScene extends Phaser.Scene {
       const platformHome = { x: c.x - 40, y: platformImg ? c.y - 40 : c.y };
       const groundHome = { x: c.x, y: this.groundY() };
 
+      // Get appropriate texture key with fallback handling
+      const getTextureKey = (spriteType: string): string => {
+        const primaryKey = `${prefix}_${spriteType}`;
+        const fallbackKey = `${prefix}_${spriteType}_fallback`;
+        
+        if (this.textures.exists(primaryKey)) {
+          return primaryKey;
+        } else if (this.textures.exists(fallbackKey)) {
+          console.warn(`Using fallback texture for ${primaryKey}`);
+          return fallbackKey;
+        } else {
+          console.error(`No texture available for ${primaryKey}, using first available frame`);
+          // Return primary key anyway and let Phaser handle the error gracefully
+          return primaryKey;
+        }
+      };
+
       const sprite = this.add
-        .sprite(platformHome.x, platformHome.y, `${prefix}_idle`, 0)
+        .sprite(platformHome.x, platformHome.y, getTextureKey('idle'), 0)
         .setScale(CONFIG.attacker.scale)
         .setDepth(2);
 
