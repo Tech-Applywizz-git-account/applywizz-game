@@ -26,7 +26,8 @@ export const useBackendQuery = (key: any, endpoint: string) => {
 // Hook for fetching coins and XP data
 export const useCoinsXP = () => {
   const { token } = useAuthContext();
-  return useQuery({
+  
+  const query = useQuery({
     queryKey: ['coinsxp'],
     queryFn: async () => await backendRequest('/coinsxp', token as string),
     enabled: Boolean(token),
@@ -38,4 +39,10 @@ export const useCoinsXP = () => {
       console.log('Coins/XP endpoint failed, using fallback values', error);
     }
   });
+
+  // Return fallback values when query fails or has no data
+  return {
+    ...query,
+    data: query.data || { coins: 0, xp: 0 }
+  };
 };

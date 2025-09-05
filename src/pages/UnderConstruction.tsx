@@ -20,6 +20,7 @@ import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
 import { getDisplayAvatar } from "../utils/avatarUtils";
+import { useGameState } from "../contexts/GameStateContext";
 
 interface UnderConstructionProps {
   title: string;
@@ -990,14 +991,14 @@ const useHP = () => {
  * Team HP Bar component for non-access users in Spaces
  */
 const TeamHPBar: React.FC = () => {
-  const { hp, total_hp, clampedHP, isLoading } = useHP();
-
-  // Fallback data for when backend is unavailable
+  const { gameState, isLoading } = useGameState();
 
   // Only show loading if we're actually loading and don't have an error yet
   if (isLoading) return <div>Loading...</div>;
 
-  const fillWidth = (clampedHP / total_hp) * BAR_WIDTH;
+  const { hp, totalHp } = gameState;
+  const clampedHP = Math.max(0, Math.min(hp || 0, totalHp || 1000));
+  const fillWidth = (clampedHP / totalHp) * BAR_WIDTH;
 
   return (
     <motion.div
@@ -1035,7 +1036,7 @@ const TeamHPBar: React.FC = () => {
             fontWeight: 700,
           }}
         >
-          {hp}/{total_hp}
+          {hp}/{totalHp}
         </span>
       </div>
 
@@ -1054,16 +1055,16 @@ const TeamHPBar: React.FC = () => {
           style={{
             height: "100%",
             backgroundColor:
-              clampedHP > total_hp * 0.7
+              clampedHP > totalHp * 0.7
                 ? colors.hpFull
-                : clampedHP > total_hp * 0.3
+                : clampedHP > totalHp * 0.3
                 ? colors.hpMedium
                 : colors.hpLow,
             borderRadius: "8px",
             boxShadow:
-              clampedHP > total_hp * 0.7
+              clampedHP > totalHp * 0.7
                 ? `0 0 10px ${colors.hpFull}40`
-                : clampedHP > total_hp * 0.3
+                : clampedHP > totalHp * 0.3
                 ? `0 0 10px ${colors.hpMedium}40`
                 : `0 0 10px ${colors.hpLow}40`,
           }}
@@ -1077,13 +1078,13 @@ const TeamHPBar: React.FC = () => {
 };
 
 export const Spaces: React.FC = () => {
-  const { hp } = useHP();
+  const { gameState, isLoading: gameStateLoading } = useGameState();
 
   const hasDesktopSidebar =
     typeof window !== "undefined" && window.innerWidth >= 1024;
   const hasCareerAccess = isCareerAssociate();
 
-  // Fetch top-four data for non-access users - properly handle loading state
+  // For non-CA users, fetch top-four data for arena display
   const {
     data: topFourData,
     isLoading: topFourLoading,
@@ -1132,58 +1133,199 @@ export const Spaces: React.FC = () => {
         style={{
           flex: 1,
           marginLeft: hasCareerAccess && hasDesktopSidebar ? "280px" : "0",
-          padding: 0, // no inner padding – let the game go full-bleed
+          padding: hasCareerAccess ? spacing.xl : 0,
           display: "flex",
           position: "relative",
+          gap: spacing.xl,
         }}
       >
-        {/* HP Bar Overlay for non-access users */}
-
-        <div
-          style={{
-            position: "absolute",
-            top: "80px", // Below the floating navbar
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 10, // Ensure it's on top of the game
-          }}
-        >
-          <TeamHPBar />
-        </div>
-
-        <Card
-          fullBleed
-          hover={false}
-          // keep the rounded container, hide overflow so the canvas clips cleanly
-          style={{
-            width: "100%",
-            height: "100vh",
-            border: "none",
-            borderRadius: 16,
-            overflow: "hidden",
-            background: "transparent",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {/* Show loading state for non-career associates while top-four data loads */}
-          {!hasCareerAccess && topFourLoading ? (
+        {/* Game Arena Section */}
+        <div style={{ flex: 2 }}>
+          {/* HP Bar Overlay for non-access users */}
+          {!hasCareerAccess && (
             <div
               style={{
-                color: colors.textPrimary,
-                fontSize: "1.2rem",
-                fontWeight: "600",
-                textAlign: "center",
+                position: "absolute",
+                top: "80px", // Below the floating navbar
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 10, // Ensure it's on top of the game
               }}
             >
-              Loading arena...
+              <TeamHPBar />
             </div>
-          ) : (
-            /* FourPlayer arena with dynamic players data - only render when data is ready */
-            <FourPlayerArena players={playersData as any} bossHp={hp} />
           )}
-        </Card>
+
+          <Card
+            fullBleed
+            hover={false}
+            style={{
+              width: "100%",
+              height: hasCareerAccess ? "600px" : "100vh",
+              border: "none",
+              borderRadius: hasCareerAccess ? 16 : 0,
+              overflow: "hidden",
+              background: "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {/* Show loading state for non-career associates while top-four data loads */}
+            {!hasCareerAccess && topFourLoading ? (
+              <div
+                style={{
+                  color: colors.textPrimary,
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  textAlign: "center",
+                }}
+              >
+                Loading arena...
+              </div>
+            ) : (
+              /* FourPlayer arena with dynamic players data - only render when data is ready */
+              <FourPlayerArena players={playersData as any} bossHp={gameState.hp} />
+            )}
+          </Card>
+        </div>
+
+        {/* Top 20 Leaderboard Section for Career Associates */}
+        {hasCareerAccess && (
+          <div style={{ flex: 1, minWidth: "300px" }}>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <Card
+                style={{
+                  padding: spacing.xl,
+                  height: "600px",
+                  overflow: "hidden",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "1.5rem",
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    margin: 0,
+                    marginBottom: spacing.lg,
+                    textAlign: "center",
+                  }}
+                >
+                  🏆 Top 20 Leaders
+                </h3>
+
+                {gameStateLoading ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "400px",
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    Loading leaderboard...
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      maxHeight: "500px",
+                      overflowY: "auto",
+                      paddingRight: spacing.sm,
+                    }}
+                  >
+                    {gameState.leaderboardData.length > 0 ? (
+                      gameState.leaderboardData.map((entry, index) => (
+                        <motion.div
+                          key={`${entry.rank}-${entry.name}`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            padding: spacing.md,
+                            backgroundColor:
+                              index < 3
+                                ? `${colors.primary}15`
+                                : colors.surfaceLight,
+                            borderRadius: "8px",
+                            marginBottom: spacing.sm,
+                            border:
+                              index < 3
+                                ? `1px solid ${colors.primary}30`
+                                : `1px solid ${colors.surfaceLight}`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "50%",
+                              backgroundColor:
+                                index === 0
+                                  ? "#FFD700"
+                                  : index === 1
+                                  ? "#C0C0C0"
+                                  : index === 2
+                                  ? "#CD7F32"
+                                  : colors.surface,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: "700",
+                              fontSize: "0.875rem",
+                              color:
+                                index < 3 ? colors.textPrimary : colors.textSecondary,
+                              marginRight: spacing.md,
+                            }}
+                          >
+                            {entry.rank}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontWeight: "600",
+                                color: colors.textPrimary,
+                                fontSize: "0.9rem",
+                                marginBottom: "2px",
+                              }}
+                            >
+                              {entry.name}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "0.8rem",
+                                color: colors.textSecondary,
+                              }}
+                            >
+                              {entry.score.toLocaleString()} points
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          color: colors.textSecondary,
+                          fontStyle: "italic",
+                          marginTop: spacing.xl,
+                        }}
+                      >
+                        No leaderboard data available
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          </div>
+        )}
       </main>
     </div>
   );

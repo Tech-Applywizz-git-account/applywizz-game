@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Login from "./pages/Login";
@@ -15,6 +16,7 @@ import Marketplace from "./pages/Marketplace";
 import { Leaderboard, Spaces } from "./pages/UnderConstruction";
 import "./App.css";
 import { AuthContextProvider } from "./contexts/contexts";
+import { GameStateProvider } from "./contexts/GameStateContext";
 import { useAuthContext } from "./hooks/hooks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { isCareerAssociate } from "./utils/roleUtils";
@@ -42,7 +44,9 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthContextProvider>
-          <PageRoutes />
+          <GameStateProvider>
+            <PageRoutes />
+          </GameStateProvider>
         </AuthContextProvider>
       </BrowserRouter>
     </QueryClientProvider>
@@ -53,9 +57,30 @@ const PageRoutes = () => {
   const { isAuthenticated } = useAuthContext();
   console.log(isAuthenticated);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Check if user has career associate access
   const hasCareerAccess = isCareerAssociate();
+
+  // Auto-route rotation for non-CA users
+  React.useEffect(() => {
+    if (isAuthenticated && !hasCareerAccess) {
+      const availableRoutes = ['/spaces', '/leaderboard', '/marketplace'];
+      
+      const interval = setInterval(() => {
+        const currentRouteIndex = availableRoutes.indexOf(location.pathname);
+        const nextIndex = currentRouteIndex >= 0 ? (currentRouteIndex + 1) % availableRoutes.length : 0;
+        const nextRoute = availableRoutes[nextIndex];
+        
+        // Only navigate if we're still on one of the auto-rotating routes
+        if (availableRoutes.includes(location.pathname)) {
+          navigate(nextRoute);
+        }
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, hasCareerAccess, location.pathname, navigate]);
 
   return (
     <AnimatePresence mode="wait">

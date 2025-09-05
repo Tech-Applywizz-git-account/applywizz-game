@@ -15,7 +15,7 @@ import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar"
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useAuthContext, useBackendQuery, useCoinsXP } from "../hooks/hooks";
+import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import { getStoredAvatar, storeAvatar, getDisplayAvatar } from "../utils/avatarUtils";
 import { CareerAssociateOnly, NonCareerAssociateOnly } from "../components/RoleGuards";
@@ -26,6 +26,7 @@ import {
   NoDataUI,
 } from "../components/FallbackComponents";
 import { useNavigate } from "react-router-dom";
+import { useGameState } from "../contexts/GameStateContext";
 
 const Settings: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>("week");
@@ -65,12 +66,14 @@ const Settings: React.FC = () => {
     isError: userError,
   } = useBackendQuery(["user-info"], "/user-info");
 
-  // Fetch coins and XP data
-  const { data: coinsXPData, isLoading: coinsLoading, error: coinsError } = useCoinsXP();
+  // Fetch coins and XP data from GameState
+  const { gameState, error: gameStateError } = useGameState();
 
-  // Fallback values when API fails
-  const userCoins = coinsXPData?.coins ?? 500;
-  const userXP = coinsXPData?.xp ?? 1250;
+  // Use values from GameState with proper fallbacks
+  const userCoins = gameState.coins; // Already defaults to 0 in GameState
+  const userXP = gameState.xp; // Already defaults to 0 in GameState
+  const coinsLoading = gameState.gameStatus === 'loading';
+  const coinsError = gameStateError;
 
   const chartExists = Array.isArray((chartData as any)?.user_data);
 
