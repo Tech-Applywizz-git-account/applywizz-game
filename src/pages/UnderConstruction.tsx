@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Construction, User } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -16,6 +17,7 @@ import Avatar from "../components/Avatar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
+import { useInactivityRotation } from "../hooks/useInactivityRotation";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
@@ -668,10 +670,27 @@ type LeaderboardEntry = individualEntry | teamEntry;
 // Leaderboard Component
 export const Leaderboard: React.FC = () => {
   const hasCareerAccess = isCareerAssociate();
-
-  const [activeTab, setActiveTab] = useState<TabType>("team");
+  const location = useLocation();
+  
+  // Get activeTab from route state for auto-rotation, default to "team"
+  const routeActiveTab = (location.state as any)?.activeTab as TabType;
+  const [activeTab, setActiveTab] = useState<TabType>(routeActiveTab || "team");
+  
   // For non-access users, always set period to "today"
   const [period, setPeriod] = useState<PeriodType>("today");
+
+  // Update activeTab when location state changes (for auto-rotation)
+  useEffect(() => {
+    if (routeActiveTab && routeActiveTab !== activeTab) {
+      setActiveTab(routeActiveTab);
+    }
+  }, [routeActiveTab, activeTab]);
+
+  // Initialize inactivity rotation for non-CA users
+  useInactivityRotation({
+    enabled: !hasCareerAccess, // Only enable for non-CA users
+    inactivityTimeoutMs: 30000 // 30 seconds
+  });
 
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
 
@@ -1082,6 +1101,12 @@ export const Spaces: React.FC = () => {
   const hasDesktopSidebar =
     typeof window !== "undefined" && window.innerWidth >= 1024;
   const hasCareerAccess = isCareerAssociate();
+
+  // Initialize inactivity rotation for non-CA users
+  useInactivityRotation({
+    enabled: !hasCareerAccess, // Only enable for non-CA users
+    inactivityTimeoutMs: 30000 // 30 seconds
+  });
 
   // Fetch top-four data for non-access users - properly handle loading state
   const {
