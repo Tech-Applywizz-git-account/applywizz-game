@@ -69,8 +69,8 @@ const Settings: React.FC = () => {
   const { data: coinsXPData, isLoading: coinsLoading, error: coinsError } = useCoinsXP();
 
   // Fallback values when API fails
-  const userCoins = coinsXPData?.coins ?? 500;
-  const userXP = coinsXPData?.xp ?? 1250;
+  const userCoins = coinsXPData?.coins ?? 0;
+  const userXP = coinsXPData?.xp ?? 0;
 
   const chartExists = Array.isArray((chartData as any)?.user_data);
 
