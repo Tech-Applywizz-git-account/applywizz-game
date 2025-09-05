@@ -1097,6 +1097,7 @@ const TeamHPBar: React.FC = () => {
 
 export const Spaces: React.FC = () => {
   const { hp } = useHP();
+  const [rotationIndex, setRotationIndex] = useState<number>(0);
 
   const hasDesktopSidebar =
     typeof window !== "undefined" && window.innerWidth >= 1024;
@@ -1108,27 +1109,70 @@ export const Spaces: React.FC = () => {
     inactivityTimeoutMs: 30000 // 30 seconds
   });
 
-  // Fetch top-four data for non-access users - properly handle loading state
-  const {
-    data: topFourData,
-    isLoading: topFourLoading,
-    error: topFourError,
-  } = useBackendQuery("top-four", "/top-four");
+  // Fetch top-four data for career associates
+  const topFourQuery = useBackendQuery("top-four", "/top-four");
+  const topFourData = hasCareerAccess ? topFourQuery.data : null;
+  const topFourLoading = hasCareerAccess ? topFourQuery.isLoading : false;
+
+  // Fetch leaderboard data for non-career associates
+  const leaderboardQuery = useBackendQuery(
+    ["leaderboard-individuals", "today"],
+    "/leaderboard?data=today&type=individual"
+  );
+  const leaderboardData = !hasCareerAccess ? leaderboardQuery.data : null;
+  const leaderboardLoading = !hasCareerAccess ? leaderboardQuery.isLoading : false;
+
+  // Set up rotation timer for non-CA users
+  useEffect(() => {
+    if (!hasCareerAccess && leaderboardData?.individuals?.length > 0) {
+      const timer = setInterval(() => {
+        setRotationIndex((prev) => {
+          const totalIndividuals = leaderboardData.individuals.length;
+          // If we have 4 or fewer individuals, don't rotate
+          if (totalIndividuals <= 4) return 0;
+          // Otherwise, rotate within the available range
+          return (prev + 1) % (totalIndividuals - 3);
+        });
+      }, 10000); // 10 seconds
+
+      return () => clearInterval(timer);
+    }
+  }, [hasCareerAccess, leaderboardData?.individuals?.length]);
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
-    if (topFourData && Array.isArray(topFourData.users)) {
-      // Extract usernames from top-four API response and map to players
-      const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
-      const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
+    const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
 
-      return users.map((user: any, index: number) => ({
-        uname: user.username || `User${index + 1}`,
-        characterId: characterIds[index] || "samurai",
-      }));
+    if (hasCareerAccess) {
+      // Career associates: use top-four data
+      if (topFourData && Array.isArray(topFourData.users)) {
+        const users = topFourData.users.slice(0, 4);
+        return users.map((user: any, index: number) => ({
+          uname: user.username || `User${index + 1}`,
+          characterId: characterIds[index] || "samurai",
+        }));
+      }
+    } else {
+      // Non-career associates: use rotating top 20 from leaderboard
+      if (leaderboardData?.individuals && Array.isArray(leaderboardData.individuals)) {
+        const individuals = leaderboardData.individuals.slice(0, 20); // Top 20
+        if (individuals.length > 0) {
+          // Get 4 users, cycling through available individuals
+          const rotatedUsers = [];
+          for (let i = 0; i < 4; i++) {
+            const userIndex = (rotationIndex + i) % individuals.length;
+            rotatedUsers.push(individuals[userIndex]);
+          }
+          
+          return rotatedUsers.map((user: any, index: number) => ({
+            uname: user.username || `User${index + 1}`,
+            characterId: characterIds[index] || "samurai",
+          }));
+        }
+      }
     }
 
-    // Default fallback data for career associates or when API fails
+    // Default fallback data when API fails or no data
     return [
       { uname: "u1", characterId: "samurai" },
       { uname: "u2", characterId: "shinobi" },
@@ -1137,8 +1181,9 @@ export const Spaces: React.FC = () => {
     ];
   };
 
-  // Only get players data if we have loaded the top-four data or if user is career associate
-  const shouldLoadContent = hasCareerAccess || !topFourLoading;
+  // Determine loading state based on user type
+  const isLoading = hasCareerAccess ? topFourLoading : leaderboardLoading;
+  const shouldLoadContent = !isLoading;
   const playersData = shouldLoadContent ? getPlayersData() : [];
 
   return (
@@ -1192,8 +1237,8 @@ export const Spaces: React.FC = () => {
             justifyContent: "center",
           }}
         >
-          {/* Show loading state for non-career associates while top-four data loads */}
-          {!hasCareerAccess && topFourLoading ? (
+          {/* Show loading state while data loads */}
+          {isLoading ? (
             <div
               style={{
                 color: colors.textPrimary,
