@@ -48,17 +48,17 @@ const useThanosHP = () => {
 
   // Always use fallback data if we don't have valid backend data
   const thanosData =
-    thanos && typeof thanos === "object" && thanos.hp !== undefined
+    thanos && typeof thanos === "object" && thanos.hp !== undefined && thanos.hp !== null
       ? thanos
       : fallbackData;
 
   const { hp, total_hp } = thanosData as any;
-  const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
+  const clampedHP = Math.max(0, Math.min(hp ?? 0, total_hp ?? 1000));
   const isThanosDead = clampedHP === 0;
 
   return {
-    hp: hp || 850,
-    total_hp: total_hp || 1000,
+    hp: hp ?? 0, // Use nullish coalescing to handle 0 correctly
+    total_hp: total_hp ?? 1000,
     clampedHP,
     isThanosDead,
     isLoading: isLoading && !error && !thanos,

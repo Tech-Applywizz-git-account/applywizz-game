@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Construction, User } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
@@ -679,6 +679,11 @@ export const Leaderboard: React.FC = () => {
   // For non-access users, always set period to "today"
   const [period, setPeriod] = useState<PeriodType>("today");
 
+  // Horizontal scroll effect for non-CA users on individual tab
+  const { scrollY } = useScroll();
+  const horizontalX = useTransform(scrollY, [0, 300], [0, -150]); // Transform Y scroll to horizontal movement
+  const shouldApplyScrollEffect = !hasCareerAccess && activeTab === "individual";
+
   // Update activeTab when location state changes (for auto-rotation)
   useEffect(() => {
     if (routeActiveTab && routeActiveTab !== activeTab) {
@@ -747,6 +752,9 @@ export const Leaderboard: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          style={{
+            x: shouldApplyScrollEffect ? horizontalX : 0,
+          }}
         >
           <h1
             style={{
@@ -990,13 +998,13 @@ const useHP = () => {
   const fallbackData = { hp: 750, total_hp: 1000 };
 
   const hpData =
-    teamHP && typeof teamHP === "object" && teamHP.hp !== undefined
+    teamHP && typeof teamHP === "object" && teamHP.hp !== undefined && teamHP.hp !== null
       ? teamHP
       : fallbackData;
 
   const { hp, total_hp } = hpData as any;
 
-  const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
+  const clampedHP = Math.max(0, Math.min(hp ?? 0, total_hp ?? 1000));
 
   return {
     hp,
