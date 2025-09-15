@@ -18,6 +18,7 @@ import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { useInactivityRotation } from "../hooks/useInactivityRotation";
+import { useLeaderboardAutoScroll } from "../hooks/useLeaderboardAutoScroll";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
@@ -692,6 +693,14 @@ export const Leaderboard: React.FC = () => {
     inactivityTimeoutMs: 30000, // 30 seconds
   });
 
+  // Initialize auto-scroll for leaderboard card (non-CA users, individual tab only)
+  const { scrollContainerRef, handleScroll } = useLeaderboardAutoScroll({
+    enabled: !hasCareerAccess, // Only enable for non-CA users
+    activeTab: activeTab, // Pass current active tab
+    inactivityTimeoutMs: 5000, // 5 seconds as specified
+    scrollSpeed: 1, // Smooth scroll speed
+  });
+
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
 
   const { data, isLoading } = useBackendQuery(
@@ -919,7 +928,11 @@ export const Leaderboard: React.FC = () => {
           </div>
 
           {/* Leaderboard */}
-          <Card style={{ padding: 0, maxHeight: "600px", overflowY: "auto" }}>
+          <Card 
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            style={{ padding: 0, maxHeight: "600px", overflowY: "auto" }}
+          >
             {isLoading ? (
               <div style={{ padding: spacing.lg, textAlign: "center" }}>
                 Loading...
