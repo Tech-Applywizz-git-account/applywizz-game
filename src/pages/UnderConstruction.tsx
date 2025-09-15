@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Construction, User } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
@@ -667,7 +667,7 @@ type teamEntry = {
 };
 
 type LeaderboardEntry = individualEntry | teamEntry;
-
+// Leaderboard Component
 export const Leaderboard: React.FC = () => {
   const hasCareerAccess = isCareerAssociate();
   const location = useLocation();
@@ -678,12 +678,6 @@ export const Leaderboard: React.FC = () => {
 
   // For non-access users, always set period to "today"
   const [period, setPeriod] = useState<PeriodType>("today");
-
-  // Horizontal scroll effect for non-CA users on individual tab
-  const { scrollY } = useScroll();
-  const horizontalX = useTransform(scrollY, [0, 300], [0, -150]); // Transform Y scroll to horizontal movement
-  const shouldApplyScrollEffect =
-    !hasCareerAccess && activeTab === "individual";
 
   // Update activeTab when location state changes (for auto-rotation)
   useEffect(() => {
@@ -704,11 +698,22 @@ export const Leaderboard: React.FC = () => {
     ["leaderboard", activeTab, period],
     endpoint
   );
+  console.log(data);
 
   const leaderboardData =
     (activeTab === "team"
-      ? (data as { teams: LeaderboardEntry[] })?.teams
-      : (data as { individuals: LeaderboardEntry[] })?.individuals) || [];
+      ? (
+          data as {
+            teams: LeaderboardEntry[];
+            personal_progress: PersonalProgress;
+          }
+        )?.teams
+      : (
+          data as {
+            individuals: LeaderboardEntry[];
+            personal_progress: PersonalProgress;
+          }
+        )?.individuals) || [];
 
   const personalProgress = {
     rank: (data as any)?.personal_progress?.rank,
@@ -722,8 +727,8 @@ export const Leaderboard: React.FC = () => {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f9fafb", // background color example
-        fontFamily: "Arial, sans-serif", // font family example
+        backgroundColor: colors.background,
+        fontFamily: fonts.body,
         display: "flex",
       }}
     >
@@ -735,24 +740,21 @@ export const Leaderboard: React.FC = () => {
           flex: 1,
           marginLeft:
             hasCareerAccess && window.innerWidth >= 1024 ? "280px" : "0",
-          padding: "2rem",
+          padding: spacing["2xl"],
         }}
       >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          style={{
-            x: shouldApplyScrollEffect ? horizontalX : 0,
-          }}
         >
           <h1
             style={{
               fontSize: "2rem",
               fontWeight: "700",
-              color: "#333", // text color example
-              marginBottom: "2rem",
-              fontFamily: "Arial, sans-serif", // font example
+              color: colors.textPrimary,
+              marginBottom: spacing["2xl"],
+              fontFamily: fonts.logo,
             }}
           >
             Leaderboard
@@ -762,27 +764,27 @@ export const Leaderboard: React.FC = () => {
           {hasCareerAccess && (
             <Card
               style={{
-                marginBottom: "1rem",
-                background: `linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(255, 0, 123, 0.05) 100%)`,
-                border: "1px solid rgba(0, 123, 255, 0.2)",
+                marginBottom: spacing.xl,
+                background: `linear-gradient(135deg, ${colors.primary}10 0%, ${colors.secondary}05 100%)`,
+                border: `1px solid ${colors.primary}20`,
               }}
             >
               <h2
                 style={{
                   fontSize: "1.5rem",
                   fontWeight: "600",
-                  color: "#333",
-                  marginBottom: "1rem",
+                  color: colors.textPrimary,
+                  marginBottom: spacing.lg,
                   display: "flex",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: spacing.sm,
                 }}
               >
                 <Avatar
-                  id={123} // Replace with dynamic data
+                  id={getDisplayAvatar().id}
                   size={32}
                   style={{
-                    border: "2px solid #007bff", // Replace with primary color
+                    border: `2px solid ${colors.primary}`,
                   }}
                 />
                 My Progress
@@ -792,7 +794,7 @@ export const Leaderboard: React.FC = () => {
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: "16px",
+                  gap: spacing.lg,
                 }}
               >
                 {/* Rank Card */}
@@ -801,14 +803,14 @@ export const Leaderboard: React.FC = () => {
                     <div
                       style={{
                         fontSize: "2rem",
-                        color: "#007bff", // Replace with primary color
+                        color: colors.primary,
                         fontWeight: "700",
                       }}
                     >
                       #{personalProgress.rank ?? "NA"}
                     </div>
                     <div>Current Rank</div>
-                    <div style={{ color: "#666" }}>
+                    <div style={{ color: colors.textMuted }}>
                       of {personalProgress?.totalParticipants ?? "NA"}{" "}
                       {activeTab === "team" ? "teams" : "players"}
                     </div>
@@ -821,14 +823,15 @@ export const Leaderboard: React.FC = () => {
                     <div
                       style={{
                         fontSize: "2rem",
-                        color: "#28a745", // success color
+                        color: colors.success,
                         fontWeight: "700",
                       }}
                     >
                       {personalProgress?.completedTasks ?? "NA"}
                     </div>
                     <div>Tasks Completed</div>
-                    <div style={{ color: "#666" }}>
+
+                    <div style={{ color: colors.textMuted }}>
                       {personalProgress?.completedTasks != null
                         ? `${Math.round(
                             personalProgress.completedTasks
@@ -848,8 +851,8 @@ export const Leaderboard: React.FC = () => {
               justifyContent: "space-between",
               alignItems: "center",
               flexWrap: "wrap",
-              gap: "16px",
-              marginBottom: "16px",
+              gap: spacing.md,
+              marginBottom: spacing.md,
             }}
           >
             {/* Tabs */}
@@ -862,10 +865,13 @@ export const Leaderboard: React.FC = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
                   style={{
-                    padding: "8px 16px",
+                    padding: spacing.md,
                     backgroundColor:
-                      activeTab === tab.id ? "#007bff" : "transparent",
-                    color: activeTab === tab.id ? "#fff" : "#333",
+                      activeTab === tab.id ? colors.primary : "transparent",
+                    color:
+                      activeTab === tab.id
+                        ? colors.textPrimary
+                        : colors.textSecondary,
                     border: "none",
                     borderRadius: "8px",
                     fontWeight: "600",
@@ -891,10 +897,13 @@ export const Leaderboard: React.FC = () => {
                     key={p.id}
                     onClick={() => setPeriod(p.id as PeriodType)}
                     style={{
-                      padding: "8px 16px",
+                      padding: spacing.md,
                       backgroundColor:
-                        period === p.id ? "#007bff" : "transparent",
-                      color: period === p.id ? "#fff" : "#333",
+                        period === p.id ? colors.primary : "transparent",
+                      color:
+                        period === p.id
+                          ? colors.textPrimary
+                          : colors.textSecondary,
                       border: "none",
                       borderRadius: "8px",
                       fontWeight: "600",
@@ -910,19 +919,13 @@ export const Leaderboard: React.FC = () => {
           </div>
 
           {/* Leaderboard */}
-          <Card
-            style={{
-              padding: 0,
-              maxHeight: "600px", // Ensure the height is fixed
-              overflowY: "auto", // Scrolls vertically
-            }}
-          >
+          <Card style={{ padding: 0, maxHeight: "600px", overflowY: "auto" }}>
             {isLoading ? (
-              <div style={{ padding: "16px", textAlign: "center" }}>
+              <div style={{ padding: spacing.lg, textAlign: "center" }}>
                 Loading...
               </div>
             ) : leaderboardData.length === 0 ? (
-              <div style={{ padding: "16px", textAlign: "center" }}>
+              <div style={{ padding: spacing.lg, textAlign: "center" }}>
                 No data available.
               </div>
             ) : (
@@ -932,25 +935,27 @@ export const Leaderboard: React.FC = () => {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    padding: "16px",
+                    padding: spacing.lg,
                     borderBottom:
                       index < leaderboardData.length - 1
-                        ? `1px solid #ccc`
+                        ? `1px solid ${colors.surfaceLight}`
                         : "none",
                     backgroundColor:
-                      index + 1 <= 3 ? "#007bff10" : "transparent",
+                      index + 1 <= 3 ? `${colors.primary}10` : "transparent",
                   }}
                 >
                   <div style={{ width: "50px", textAlign: "center" }}>
                     {index + 1 <= 3 ? (
                       ["🥇", "🥈", "🥉"][index]
                     ) : (
-                      <span style={{ fontWeight: 700, color: "#666" }}>
+                      <span
+                        style={{ fontWeight: 700, color: colors.textSecondary }}
+                      >
                         #{index + 1}
                       </span>
                     )}
                   </div>
-                  <div style={{ flex: 1, marginLeft: "16px" }}>
+                  <div style={{ flex: 1, marginLeft: spacing.md }}>
                     <h3 style={{ margin: 0 }}>
                       {activeTab === "team"
                         ? (entry as any).team_name
@@ -972,6 +977,7 @@ export const Leaderboard: React.FC = () => {
     </div>
   );
 };
+
 const BAR_WIDTH = 600; // Wider visual bar for clarity
 
 const useHP = () => {
@@ -984,16 +990,13 @@ const useHP = () => {
   const fallbackData = { hp: 750, total_hp: 1000 };
 
   const hpData =
-    teamHP &&
-    typeof teamHP === "object" &&
-    teamHP.hp !== undefined &&
-    teamHP.hp !== null
+    teamHP && typeof teamHP === "object" && teamHP.hp !== undefined
       ? teamHP
       : fallbackData;
 
   const { hp, total_hp } = hpData as any;
 
-  const clampedHP = Math.max(0, Math.min(hp ?? 0, total_hp ?? 1000));
+  const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
 
   return {
     hp,
