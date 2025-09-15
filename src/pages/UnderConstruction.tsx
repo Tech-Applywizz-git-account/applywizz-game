@@ -18,6 +18,7 @@ import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
 import { useInactivityRotation } from "../hooks/useInactivityRotation";
+import { useSmoothScroll } from "../hooks/useSmoothScroll";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
@@ -692,6 +693,17 @@ export const Leaderboard: React.FC = () => {
     inactivityTimeoutMs: 30000, // 30 seconds
   });
 
+  // Determine if smooth scroll should be enabled
+  // Apply to non-CA users and individual users only
+  const shouldEnableSmoothScroll = !hasCareerAccess && activeTab === "individual";
+
+  // Initialize smooth scroll functionality
+  const { scrollRef, isScrolling } = useSmoothScroll({
+    enabled: shouldEnableSmoothScroll,
+    smoothness: 0.12,
+    damping: 0.85,
+  });
+
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
 
   const { data, isLoading } = useBackendQuery(
@@ -699,6 +711,14 @@ export const Leaderboard: React.FC = () => {
     endpoint
   );
   console.log(data);
+
+  // Mock data for development/testing when no backend data is available
+  const mockLeaderboardData = Array.from({ length: 20 }, (_, i) => ({
+    username: `User${i + 1}`,
+    user_score: Math.floor(Math.random() * 100) + 20,
+    team_name: `Team ${String.fromCharCode(65 + (i % 8))}`,
+    team_score: Math.floor(Math.random() * 500) + 100
+  }));
 
   const leaderboardData =
     (activeTab === "team"
@@ -713,7 +733,9 @@ export const Leaderboard: React.FC = () => {
             individuals: LeaderboardEntry[];
             personal_progress: PersonalProgress;
           }
-        )?.individuals) || [];
+        )?.individuals) || 
+    // Use mock data when no real data is available
+    (process.env.NODE_ENV === 'development' ? mockLeaderboardData : []);
 
   const personalProgress = {
     rank: (data as any)?.personal_progress?.rank,
@@ -919,57 +941,124 @@ export const Leaderboard: React.FC = () => {
           </div>
 
           {/* Leaderboard */}
-          <Card style={{ padding: 0, maxHeight: "600px", overflowY: "auto" }}>
-            {isLoading ? (
-              <div style={{ padding: spacing.lg, textAlign: "center" }}>
-                Loading...
+          <Card 
+            style={{ 
+              padding: 0, 
+              maxHeight: "600px", 
+              position: "relative",
+              overflow: shouldEnableSmoothScroll ? "hidden" : "hidden auto"
+            }}
+          >
+            <div
+              ref={shouldEnableSmoothScroll ? scrollRef : undefined}
+              style={{
+                height: shouldEnableSmoothScroll ? "600px" : "auto",
+                overflow: shouldEnableSmoothScroll ? "hidden" : "auto"
+              }}
+            >
+              <div
+                style={{
+                  ...(shouldEnableSmoothScroll ? {
+                    willChange: "transform",
+                    transition: "none"
+                  } : {})
+                }}
+              >
+                {isLoading ? (
+                  <div style={{ padding: spacing.lg, textAlign: "center" }}>
+                    Loading...
+                  </div>
+                ) : leaderboardData.length === 0 ? (
+                  <div style={{ padding: spacing.lg, textAlign: "center" }}>
+                    No data available.
+                  </div>
+                ) : (
+                  leaderboardData.map((entry, index) => (
+                    <motion.div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: spacing.lg,
+                        borderBottom:
+                          index < leaderboardData.length - 1
+                            ? `1px solid ${colors.surfaceLight}`
+                            : "none",
+                        backgroundColor:
+                          index + 1 <= 3 ? `${colors.primary}10` : "transparent",
+                        ...(shouldEnableSmoothScroll && isScrolling ? {
+                          opacity: 0.9,
+                          transition: "opacity 0.2s ease"
+                        } : {})
+                      }}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <div style={{ width: "50px", textAlign: "center" }}>
+                        {index + 1 <= 3 ? (
+                          ["🥇", "🥈", "🥉"][index]
+                        ) : (
+                          <span
+                            style={{ fontWeight: 700, color: colors.textSecondary }}
+                          >
+                            #{index + 1}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, marginLeft: spacing.md }}>
+                        <h3 style={{ margin: 0 }}>
+                          {activeTab === "team"
+                            ? (entry as any).team_name
+                            : (entry as any).username}
+                        </h3>
+                      </div>
+                      <div style={{ fontWeight: "700" }}>
+                        {activeTab === "team"
+                          ? (entry as any).team_score
+                          : (entry as any).user_score}{" "}
+                        tasks
+                      </div>
+                    </motion.div>
+                  ))
+                )}
               </div>
-            ) : leaderboardData.length === 0 ? (
-              <div style={{ padding: spacing.lg, textAlign: "center" }}>
-                No data available.
-              </div>
-            ) : (
-              leaderboardData.map((entry, index) => (
-                <div
-                  key={index}
+            </div>
+            
+            {/* Smooth scroll indicator for enhanced experience */}
+            {shouldEnableSmoothScroll && isScrolling && (
+              <motion.div
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "4px",
+                  height: "60px",
+                  backgroundColor: `${colors.primary}40`,
+                  borderRadius: "2px",
+                  zIndex: 10,
+                }}
+                initial={{ opacity: 0, scaleY: 0.5 }}
+                animate={{ opacity: 1, scaleY: 1 }}
+                exit={{ opacity: 0, scaleY: 0.5 }}
+                transition={{ duration: 0.2 }}
+              >
+                <motion.div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: spacing.lg,
-                    borderBottom:
-                      index < leaderboardData.length - 1
-                        ? `1px solid ${colors.surfaceLight}`
-                        : "none",
-                    backgroundColor:
-                      index + 1 <= 3 ? `${colors.primary}10` : "transparent",
+                    width: "100%",
+                    height: "20px",
+                    backgroundColor: colors.primary,
+                    borderRadius: "2px",
                   }}
-                >
-                  <div style={{ width: "50px", textAlign: "center" }}>
-                    {index + 1 <= 3 ? (
-                      ["🥇", "🥈", "🥉"][index]
-                    ) : (
-                      <span
-                        style={{ fontWeight: 700, color: colors.textSecondary }}
-                      >
-                        #{index + 1}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, marginLeft: spacing.md }}>
-                    <h3 style={{ margin: 0 }}>
-                      {activeTab === "team"
-                        ? (entry as any).team_name
-                        : (entry as any).username}
-                    </h3>
-                  </div>
-                  <div style={{ fontWeight: "700" }}>
-                    {activeTab === "team"
-                      ? (entry as any).team_score
-                      : (entry as any).user_score}{" "}
-                    tasks
-                  </div>
-                </div>
-              ))
+                  animate={{ y: [0, 40, 0] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </motion.div>
             )}
           </Card>
         </motion.div>
