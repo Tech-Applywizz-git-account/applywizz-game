@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { isNonCareerAssociate } from "../utils/roleUtils";
 
 interface InactivityRotationOptions {
@@ -14,10 +14,11 @@ interface InactivityRotationOptions {
 export const useInactivityRotation = (
   options: InactivityRotationOptions = {}
 ) => {
-  const { inactivityTimeoutMs = 30000, enabled = true } = options;
+  const { inactivityTimeoutMs = 30000, enabled = true } = options; // 30 seconds default
   const navigate = useNavigate();
-  const timeoutRef = useRef<NodeJS.Timeout>(null);
-  const [navIndex, setNavIndex] = useState(0);
+  const location = useLocation();
+  const timeoutRef = useRef<NodeJS.Timeout>();
+  const currentRouteIndexRef = useRef(0);
 
   // Define the rotation sequence for non-CA users
   const rotationSequence = [
@@ -34,35 +35,50 @@ export const useInactivityRotation = (
     },
   ];
 
+  // Update current route index when location changes
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const currentState = location.state as any;
+
+    if (currentPath === "/spaces") {
+      currentRouteIndexRef.current = 0;
+    } else if (currentPath === "/leaderboard") {
+      if (currentState?.activeTab === "individual") {
+        currentRouteIndexRef.current = 2;
+      } else {
+        currentRouteIndexRef.current = 1; // default to team
+      }
+    }
+  }, [location]);
+
   const resetInactivityTimer = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
+    // Only set timer for non-career associates and when enabled
     if (!enabled || !isNonCareerAssociate()) {
       return;
     }
 
     timeoutRef.current = setTimeout(() => {
-      // Increment navIndex and wrap around using % 3
-      setNavIndex((prev) => {
-        const nextIndex = (prev + 1) % rotationSequence.length;
-        const nextRoute = rotationSequence[nextIndex];
+      // Move to next route in sequence
+      currentRouteIndexRef.current =
+        (currentRouteIndexRef.current + 1) % rotationSequence.length;
+      const nextRoute = rotationSequence[currentRouteIndexRef.current];
 
-        console.log(`Auto-rotating to: ${nextRoute.displayName}`);
+      console.log(`Auto-rotating to: ${nextRoute.displayName}`);
 
-        if (nextRoute.state) {
-          navigate(nextRoute.path, { state: nextRoute.state });
-        } else {
-          navigate(nextRoute.path);
-        }
-
-        return nextIndex;
-      });
+      if (nextRoute.state) {
+        navigate(nextRoute.path, { state: nextRoute.state });
+      } else {
+        navigate(nextRoute.path);
+      }
     }, inactivityTimeoutMs);
   };
 
   useEffect(() => {
+    // Only attach listeners for non-career associates
     if (!enabled || !isNonCareerAssociate()) {
       return;
     }
@@ -81,23 +97,27 @@ export const useInactivityRotation = (
       resetInactivityTimer();
     };
 
+    // Attach event listeners
     events.forEach((event) => {
       document.addEventListener(event, handleActivity, true);
     });
 
+    // Start the initial timer
     resetInactivityTimer();
 
+    // Cleanup function
     return () => {
       events.forEach((event) => {
         document.removeEventListener(event, handleActivity, true);
       });
+
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-    // Only depend on enabled/inactivityTimeoutMs
   }, [enabled, inactivityTimeoutMs]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -108,7 +128,7 @@ export const useInactivityRotation = (
 
   return {
     resetTimer: resetInactivityTimer,
-    navIndex,
+    currentRouteIndex: currentRouteIndexRef.current,
     rotationSequence,
   };
 };
