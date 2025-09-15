@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { isNonCareerAssociate } from "../utils/roleUtils";
 
@@ -18,7 +18,7 @@ export const useInactivityRotation = (
   const navigate = useNavigate();
   const location = useLocation();
   const timeoutRef = useRef<NodeJS.Timeout>();
-  const currentRouteIndexRef = useRef(0);
+  const [navIndex, setNavIndex] = useState(0);
 
   // Define the rotation sequence for non-CA users
   const rotationSequence = [
@@ -35,18 +35,18 @@ export const useInactivityRotation = (
     },
   ];
 
-  // Update current route index when location changes
+  // Update navIndex when location changes to sync with current route
   useEffect(() => {
     const currentPath = location.pathname;
     const currentState = location.state as any;
 
     if (currentPath === "/spaces") {
-      currentRouteIndexRef.current = 0;
+      setNavIndex(0);
     } else if (currentPath === "/leaderboard") {
       if (currentState?.activeTab === "individual") {
-        currentRouteIndexRef.current = 2;
+        setNavIndex(2);
       } else {
-        currentRouteIndexRef.current = 1; // default to team
+        setNavIndex(1); // default to team
       }
     }
   }, [location]);
@@ -62,13 +62,14 @@ export const useInactivityRotation = (
     }
 
     timeoutRef.current = setTimeout(() => {
-      // Move to next route in sequence
-      currentRouteIndexRef.current =
-        (currentRouteIndexRef.current + 1) % rotationSequence.length;
-      const nextRoute = rotationSequence[currentRouteIndexRef.current];
-
+      // Move to next route in sequence using modulo
+      const nextIndex = (navIndex + 1) % 3;
+      const nextRoute = rotationSequence[nextIndex];
+      
       console.log(`Auto-rotating to: ${nextRoute.displayName}`);
 
+      setNavIndex(nextIndex);
+      
       if (nextRoute.state) {
         navigate(nextRoute.path, { state: nextRoute.state });
       } else {
@@ -128,8 +129,9 @@ export const useInactivityRotation = (
 
   return {
     resetTimer: resetInactivityTimer,
-    currentRouteIndex: currentRouteIndexRef.current,
+    currentRouteIndex: navIndex,
     rotationSequence,
+    navIndex,
   };
 };
 

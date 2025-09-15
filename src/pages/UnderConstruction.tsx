@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Construction, User } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -692,6 +692,60 @@ export const Leaderboard: React.FC = () => {
     inactivityTimeoutMs: 30000 // 30 seconds
   });
 
+  // Horizontal scroll state and refs for individual leaderboard
+  const leaderboardRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const scrollIntervalRef = useRef<NodeJS.Timeout>();
+
+  // Handle horizontal scroll effect for individual leaderboard
+  useEffect(() => {
+    // Only apply scroll effect for non-CA users on individual leaderboard
+    if (hasCareerAccess || activeTab !== "individual") {
+      // Clear any existing scroll timers
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
+      return;
+    }
+
+    // Wait 5 seconds before starting scroll
+    scrollTimeoutRef.current = setTimeout(() => {
+      const leaderboardElement = leaderboardRef.current;
+      if (!leaderboardElement) return;
+
+      const maxScrollLeft = leaderboardElement.scrollWidth - leaderboardElement.clientWidth;
+      if (maxScrollLeft <= 0) return; // No need to scroll if content fits
+
+      const scrollDuration = 30000; // 30 seconds
+      const scrollStep = maxScrollLeft / (scrollDuration / 50); // 50ms intervals
+      let currentScroll = 0;
+
+      scrollIntervalRef.current = setInterval(() => {
+        currentScroll += scrollStep;
+        if (currentScroll >= maxScrollLeft) {
+          currentScroll = maxScrollLeft;
+          if (scrollIntervalRef.current) {
+            clearInterval(scrollIntervalRef.current);
+          }
+        }
+        leaderboardElement.scrollLeft = currentScroll;
+      }, 50);
+    }, 5000);
+
+    // Cleanup function
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
+    };
+  }, [activeTab, hasCareerAccess]);
+
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
 
   const { data, isLoading } = useBackendQuery(
@@ -919,7 +973,15 @@ export const Leaderboard: React.FC = () => {
           </div>
 
           {/* Leaderboard */}
-          <Card style={{ padding: 0, maxHeight: "600px", overflowY: "auto" }}>
+          <Card 
+            ref={leaderboardRef}
+            style={{ 
+              padding: 0, 
+              maxHeight: "600px", 
+              overflowY: activeTab === "individual" && !hasCareerAccess ? "hidden" : "auto",
+              overflowX: activeTab === "individual" && !hasCareerAccess ? "auto" : "hidden"
+            }}
+          >
             {isLoading ? (
               <div style={{ padding: spacing.lg, textAlign: "center" }}>
                 Loading...
@@ -929,47 +991,61 @@ export const Leaderboard: React.FC = () => {
                 No data available.
               </div>
             ) : (
-              leaderboardData.map((entry, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: spacing.lg,
-                    borderBottom:
-                      index < leaderboardData.length - 1
-                        ? `1px solid ${colors.surfaceLight}`
-                        : "none",
-                    backgroundColor:
-                      index + 1 <= 3 ? `${colors.primary}10` : "transparent",
-                  }}
-                >
-                  <div style={{ width: "50px", textAlign: "center" }}>
-                    {index + 1 <= 3 ? (
-                      ["🥇", "🥈", "🥉"][index]
-                    ) : (
-                      <span
-                        style={{ fontWeight: 700, color: colors.textSecondary }}
-                      >
-                        #{index + 1}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, marginLeft: spacing.md }}>
-                    <h3 style={{ margin: 0 }}>
+              <div style={{
+                display: activeTab === "individual" && !hasCareerAccess ? "flex" : "block",
+                flexDirection: activeTab === "individual" && !hasCareerAccess ? "row" : undefined,
+                width: activeTab === "individual" && !hasCareerAccess ? "max-content" : "100%"
+              }}>
+                {leaderboardData.map((entry, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: spacing.lg,
+                      borderBottom:
+                        activeTab === "individual" && !hasCareerAccess 
+                          ? "none"
+                          : index < leaderboardData.length - 1
+                          ? `1px solid ${colors.surfaceLight}`
+                          : "none",
+                      borderRight:
+                        activeTab === "individual" && !hasCareerAccess && index < leaderboardData.length - 1
+                          ? `1px solid ${colors.surfaceLight}`
+                          : "none",
+                      backgroundColor:
+                        index + 1 <= 3 ? `${colors.primary}10` : "transparent",
+                      minWidth: activeTab === "individual" && !hasCareerAccess ? "300px" : "auto",
+                      flexShrink: activeTab === "individual" && !hasCareerAccess ? 0 : undefined
+                    }}
+                  >
+                    <div style={{ width: "50px", textAlign: "center" }}>
+                      {index + 1 <= 3 ? (
+                        ["🥇", "🥈", "🥉"][index]
+                      ) : (
+                        <span
+                          style={{ fontWeight: 700, color: colors.textSecondary }}
+                        >
+                          #{index + 1}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, marginLeft: spacing.md }}>
+                      <h3 style={{ margin: 0 }}>
+                        {activeTab === "team"
+                          ? (entry as any).team_name
+                          : (entry as any).username}
+                      </h3>
+                    </div>
+                    <div style={{ fontWeight: "700" }}>
                       {activeTab === "team"
-                        ? (entry as any).team_name
-                        : (entry as any).username}
-                    </h3>
+                        ? (entry as any).team_score
+                        : (entry as any).user_score}{" "}
+                      tasks
+                    </div>
                   </div>
-                  <div style={{ fontWeight: "700" }}>
-                    {activeTab === "team"
-                      ? (entry as any).team_score
-                      : (entry as any).user_score}{" "}
-                    tasks
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </Card>
         </motion.div>
