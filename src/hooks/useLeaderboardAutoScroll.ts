@@ -59,7 +59,6 @@ export const useLeaderboardAutoScroll = (
     }
 
     isScrollingRef.current = true;
-
     const animate = () => {
       if (!scrollContainerRef.current || !isScrollingRef.current) {
         return;
@@ -102,6 +101,7 @@ export const useLeaderboardAutoScroll = (
       cancelAnimationFrame(animationRef.current);
       animationRef.current = undefined;
     }
+    onAutoScrollStateChange?.(false);
   };
 
   // Handle user activity to reset timer

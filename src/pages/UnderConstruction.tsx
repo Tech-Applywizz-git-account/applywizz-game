@@ -689,6 +689,7 @@ export const Leaderboard: React.FC = () => {
 
   // Initialize inactivity rotation for non-CA users
   const { notifyIndividualViewComplete } = useInactivityRotation({
+
     enabled: !hasCareerAccess, // Only enable for non-CA users
     inactivityTimeoutMs: 30000, // 30 seconds
   });

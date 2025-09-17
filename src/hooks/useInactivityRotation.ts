@@ -19,6 +19,7 @@ export const useInactivityRotation = (
   const location = useLocation();
   const timeoutRef = useRef<NodeJS.Timeout>();
   const currentRouteIndexRef = useRef(0);
+  const suppressScrollActivityRef = useRef(false);
 
   // Define the rotation sequence for non-CA users
   const rotationSequence = useMemo(
@@ -120,7 +121,17 @@ export const useInactivityRotation = (
       "click",
     ];
 
-    const handleActivity = () => {
+    const handleActivity = (event: Event) => {
+      if (event.type === "scroll") {
+        if (suppressScrollActivityRef.current) {
+          return;
+        }
+
+        if (!event.isTrusted) {
+          return;
+        }
+      }
+
       resetInactivityTimer();
     };
 
