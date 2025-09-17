@@ -8,11 +8,11 @@ import {
 } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Login from "./pages/Login";
-import AvatarSelection from "./pages/AvatarSelection";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Marketplace from "./pages/Marketplace";
-import { Leaderboard, Spaces } from "./pages/UnderConstruction";
+import { Spaces } from "./pages/UnderConstruction";
+import { Leaderboard } from "./pages/Leaderboard";
 import "./App.css";
 import { AuthContextProvider } from "./contexts/contexts";
 import { useAuthContext } from "./hooks/hooks";
@@ -51,10 +51,8 @@ const App: React.FC = () => {
 
 const PageRoutes = () => {
   const { isAuthenticated } = useAuthContext();
-  console.log(isAuthenticated);
   const location = useLocation();
 
-  // Check if user has career associate access
   const hasCareerAccess = isCareerAssociate();
 
   return (
