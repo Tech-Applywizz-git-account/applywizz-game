@@ -688,10 +688,11 @@ export const Leaderboard: React.FC = () => {
   }, [routeActiveTab, activeTab]);
 
   // Initialize inactivity rotation for non-CA users
-  useInactivityRotation({
-    enabled: !hasCareerAccess, // Only enable for non-CA users
-    inactivityTimeoutMs: 30000, // 30 seconds
-  });
+  const { notifyIndividualViewComplete, setScrollActivitySuppressed } =
+    useInactivityRotation({
+      enabled: !hasCareerAccess, // Only enable for non-CA users
+      inactivityTimeoutMs: 30000, // 30 seconds
+    });
 
   // Initialize auto-scroll for leaderboard card (non-CA users, individual tab only)
   const { scrollContainerRef, handleScroll } = useLeaderboardAutoScroll({
@@ -699,6 +700,8 @@ export const Leaderboard: React.FC = () => {
     activeTab: activeTab, // Pass current active tab
     inactivityTimeoutMs: 5000, // 5 seconds as specified
     scrollSpeed: 1, // Smooth scroll speed
+    onAutoScrollComplete: notifyIndividualViewComplete,
+    onAutoScrollStateChange: setScrollActivitySuppressed,
   });
 
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;
