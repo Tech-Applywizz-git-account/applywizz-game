@@ -24,6 +24,7 @@ export const useLeaderboardAutoScroll = (
     activeTab = "team",
     onAutoScrollComplete,
     onAutoScrollStateChange,
+
   } = options;
 
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -35,6 +36,7 @@ export const useLeaderboardAutoScroll = (
   useEffect(() => {
     autoScrollStateChangeRef.current = onAutoScrollStateChange;
   }, [onAutoScrollStateChange]);
+
 
   // Reset the inactivity timer
   const resetInactivityTimer = () => {
@@ -114,7 +116,9 @@ export const useLeaderboardAutoScroll = (
 
     if (wasScrolling) {
       autoScrollStateChangeRef.current?.(false);
+
     }
+    onAutoScrollStateChange?.(false);
   };
 
   // Handle user activity to reset timer

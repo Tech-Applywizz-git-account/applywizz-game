@@ -132,6 +132,7 @@ export const useInactivityRotation = (
         (!event.isTrusted || suppressScrollActivityRef.current)
       ) {
         return;
+
       }
 
       resetInactivityTimer();
@@ -185,5 +186,6 @@ export const useInactivityRotation = (
     rotationSequence,
     notifyIndividualViewComplete,
     setScrollActivitySuppressed,
+
   };
 };
