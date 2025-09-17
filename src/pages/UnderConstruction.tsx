@@ -688,7 +688,7 @@ export const Leaderboard: React.FC = () => {
   }, [routeActiveTab, activeTab]);
 
   // Initialize inactivity rotation for non-CA users
-  useInactivityRotation({
+  const { setSuppressScrollActivity } = useInactivityRotation({
     enabled: !hasCareerAccess, // Only enable for non-CA users
     inactivityTimeoutMs: 30000, // 30 seconds
   });
@@ -699,6 +699,7 @@ export const Leaderboard: React.FC = () => {
     activeTab: activeTab, // Pass current active tab
     inactivityTimeoutMs: 5000, // 5 seconds as specified
     scrollSpeed: 1, // Smooth scroll speed
+    onAutoScrollStateChange: setSuppressScrollActivity,
   });
 
   const endpoint = `/leaderboard?data=${period}&type=${activeTab}`;

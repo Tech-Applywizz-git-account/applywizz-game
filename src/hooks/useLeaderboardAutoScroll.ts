@@ -6,6 +6,7 @@ interface LeaderboardAutoScrollOptions {
   inactivityTimeoutMs?: number;
   scrollSpeed?: number;
   activeTab?: string;
+  onAutoScrollStateChange?: (isAutoScrolling: boolean) => void;
 }
 
 /**
@@ -19,7 +20,8 @@ export const useLeaderboardAutoScroll = (
     enabled = true,
     inactivityTimeoutMs = 5000, // 5 seconds as specified
     scrollSpeed = 1, // pixels per frame
-    activeTab = "team"
+    activeTab = "team",
+    onAutoScrollStateChange,
   } = options;
 
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -58,6 +60,7 @@ export const useLeaderboardAutoScroll = (
     }
 
     isScrollingRef.current = true;
+    onAutoScrollStateChange?.(true);
     
     const animate = () => {
       if (!scrollContainerRef.current || !isScrollingRef.current) {
@@ -91,6 +94,7 @@ export const useLeaderboardAutoScroll = (
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
+    onAutoScrollStateChange?.(false);
   };
 
   // Handle user activity to reset timer

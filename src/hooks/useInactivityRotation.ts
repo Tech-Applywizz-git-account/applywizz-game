@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { isNonCareerAssociate } from "../utils/roleUtils";
 
@@ -19,6 +19,7 @@ export const useInactivityRotation = (
   const location = useLocation();
   const timeoutRef = useRef<NodeJS.Timeout>();
   const currentRouteIndexRef = useRef(0);
+  const suppressScrollActivityRef = useRef(false);
 
   // Define the rotation sequence for non-CA users
   const rotationSequence = [
@@ -50,6 +51,10 @@ export const useInactivityRotation = (
       }
     }
   }, [location]);
+
+  const setSuppressScrollActivity = useCallback((value: boolean) => {
+    suppressScrollActivityRef.current = value;
+  }, []);
 
   const resetInactivityTimer = () => {
     if (timeoutRef.current) {
@@ -93,7 +98,17 @@ export const useInactivityRotation = (
       "click",
     ];
 
-    const handleActivity = () => {
+    const handleActivity = (event: Event) => {
+      if (event.type === "scroll") {
+        if (suppressScrollActivityRef.current) {
+          return;
+        }
+
+        if (!event.isTrusted) {
+          return;
+        }
+      }
+
       resetInactivityTimer();
     };
 
@@ -130,6 +145,7 @@ export const useInactivityRotation = (
     resetTimer: resetInactivityTimer,
     currentRouteIndex: currentRouteIndexRef.current,
     rotationSequence,
+    setSuppressScrollActivity,
   };
 };
 
