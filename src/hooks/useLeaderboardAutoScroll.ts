@@ -6,7 +6,7 @@ interface LeaderboardAutoScrollOptions {
   inactivityTimeoutMs?: number;
   scrollSpeed?: number;
   activeTab?: string;
-  onAutoScrollStateChange?: (isAutoScrolling: boolean) => void;
+  onAutoScrollComplete?: () => void;
 }
 
 /**
@@ -21,14 +21,13 @@ export const useLeaderboardAutoScroll = (
     inactivityTimeoutMs = 5000, // 5 seconds as specified
     scrollSpeed = 1, // pixels per frame
     activeTab = "team",
-    onAutoScrollStateChange,
+    onAutoScrollComplete,
   } = options;
 
   const timeoutRef = useRef<NodeJS.Timeout>();
   const animationRef = useRef<number>();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
-  const lastScrollPositionRef = useRef(0);
 
   // Reset the inactivity timer
   const resetInactivityTimer = () => {
@@ -60,8 +59,6 @@ export const useLeaderboardAutoScroll = (
     }
 
     isScrollingRef.current = true;
-    onAutoScrollStateChange?.(true);
-    
     const animate = () => {
       if (!scrollContainerRef.current || !isScrollingRef.current) {
         return;
@@ -69,18 +66,27 @@ export const useLeaderboardAutoScroll = (
 
       const container = scrollContainerRef.current;
       const currentScrollTop = container.scrollTop;
-      const maxScrollTop = container.scrollHeight - container.clientHeight;
+      const maxScrollTop = Math.max(
+        container.scrollHeight - container.clientHeight,
+        0
+      );
 
-      // If we've reached the bottom, loop back to top
-      if (currentScrollTop >= maxScrollTop) {
-        container.scrollTop = 0;
-        lastScrollPositionRef.current = 0;
-      } else {
-        // Smooth scroll down
-        const newScrollTop = currentScrollTop + scrollSpeed;
-        container.scrollTop = newScrollTop;
-        lastScrollPositionRef.current = newScrollTop;
+      if (maxScrollTop <= 0) {
+        stopAutoScroll();
+        onAutoScrollComplete?.();
+        return;
       }
+
+      if (currentScrollTop >= maxScrollTop) {
+        container.scrollTop = maxScrollTop;
+        stopAutoScroll();
+        onAutoScrollComplete?.();
+        return;
+      }
+
+      // Smooth scroll down
+      const newScrollTop = Math.min(currentScrollTop + scrollSpeed, maxScrollTop);
+      container.scrollTop = newScrollTop;
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -93,6 +99,7 @@ export const useLeaderboardAutoScroll = (
     isScrollingRef.current = false;
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
+      animationRef.current = undefined;
     }
     onAutoScrollStateChange?.(false);
   };
