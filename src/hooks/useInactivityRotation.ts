@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { isNonCareerAssociate } from "../utils/roleUtils";
 
@@ -21,19 +21,70 @@ export const useInactivityRotation = (
   const currentRouteIndexRef = useRef(0);
 
   // Define the rotation sequence for non-CA users
-  const rotationSequence = [
-    { path: "/spaces", displayName: "Spaces" },
-    {
-      path: "/leaderboard",
-      state: { activeTab: "team" },
-      displayName: "Leaderboard Team",
-    },
-    {
-      path: "/leaderboard",
-      state: { activeTab: "individual" },
-      displayName: "Leaderboard Individual",
-    },
-  ];
+  const rotationSequence = useMemo(
+    () => [
+      { path: "/spaces", displayName: "Spaces" },
+      {
+        path: "/leaderboard",
+        state: { activeTab: "team" },
+        displayName: "Leaderboard Team",
+      },
+      {
+        path: "/leaderboard",
+        state: { activeTab: "individual" },
+        displayName: "Leaderboard Individual",
+      },
+    ],
+    []
+  );
+
+  const clearTimer = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+  }, []);
+
+  const advanceToNextRoute = useCallback(() => {
+    if (!enabled || !isNonCareerAssociate()) {
+      return;
+    }
+
+    currentRouteIndexRef.current =
+      (currentRouteIndexRef.current + 1) % rotationSequence.length;
+    const nextRoute = rotationSequence[currentRouteIndexRef.current];
+
+    if (nextRoute.state) {
+      navigate(nextRoute.path, { state: nextRoute.state });
+    } else {
+      navigate(nextRoute.path);
+    }
+  }, [enabled, navigate, rotationSequence]);
+
+  const scheduleForCurrentRoute = useCallback(() => {
+    clearTimer();
+
+    if (!enabled || !isNonCareerAssociate()) {
+      return;
+    }
+
+    const currentStep = rotationSequence[currentRouteIndexRef.current];
+    const isIndividualStep =
+      currentStep.path === "/leaderboard" &&
+      currentStep.state?.activeTab === "individual";
+
+    if (isIndividualStep) {
+      return; // Wait for the individual leaderboard scroll to complete
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      advanceToNextRoute();
+    }, inactivityTimeoutMs);
+  }, [advanceToNextRoute, clearTimer, enabled, inactivityTimeoutMs, rotationSequence]);
+
+  const resetInactivityTimer = useCallback(() => {
+    scheduleForCurrentRoute();
+  }, [scheduleForCurrentRoute]);
 
   // Update current route index when location changes
   useEffect(() => {
@@ -49,37 +100,14 @@ export const useInactivityRotation = (
         currentRouteIndexRef.current = 1; // default to team
       }
     }
-  }, [location]);
 
-  const resetInactivityTimer = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Only set timer for non-career associates and when enabled
-    if (!enabled || !isNonCareerAssociate()) {
-      return;
-    }
-
-    timeoutRef.current = setTimeout(() => {
-      // Move to next route in sequence
-      currentRouteIndexRef.current =
-        (currentRouteIndexRef.current + 1) % rotationSequence.length;
-      const nextRoute = rotationSequence[currentRouteIndexRef.current];
-
-      console.log(`Auto-rotating to: ${nextRoute.displayName}`);
-
-      if (nextRoute.state) {
-        navigate(nextRoute.path, { state: nextRoute.state });
-      } else {
-        navigate(nextRoute.path);
-      }
-    }, inactivityTimeoutMs);
-  };
+    resetInactivityTimer();
+  }, [location, resetInactivityTimer]);
 
   useEffect(() => {
     // Only attach listeners for non-career associates
     if (!enabled || !isNonCareerAssociate()) {
+      clearTimer();
       return;
     }
 
@@ -88,7 +116,6 @@ export const useInactivityRotation = (
       "mousemove",
       "keypress",
       "keydown",
-      "scroll",
       "touchstart",
       "click",
     ];
@@ -111,25 +138,38 @@ export const useInactivityRotation = (
         document.removeEventListener(event, handleActivity, true);
       });
 
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearTimer();
     };
-  }, [enabled, inactivityTimeoutMs]);
+  }, [clearTimer, enabled, resetInactivityTimer]);
+
+  const notifyIndividualViewComplete = useCallback(() => {
+    if (!enabled || !isNonCareerAssociate()) {
+      return;
+    }
+
+    const currentStep = rotationSequence[currentRouteIndexRef.current];
+    const isIndividualStep =
+      currentStep.path === "/leaderboard" &&
+      currentStep.state?.activeTab === "individual";
+
+    if (!isIndividualStep) {
+      return;
+    }
+
+    advanceToNextRoute();
+  }, [advanceToNextRoute, enabled, rotationSequence]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearTimer();
     };
-  }, []);
+  }, [clearTimer]);
 
   return {
     resetTimer: resetInactivityTimer,
     currentRouteIndex: currentRouteIndexRef.current,
     rotationSequence,
+    notifyIndividualViewComplete,
   };
 };
-
