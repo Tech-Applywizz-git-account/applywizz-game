@@ -17,7 +17,7 @@ export const useInactivityRotation = (
   const { inactivityTimeoutMs = 30000, enabled = true } = options; // 30 seconds default
   const navigate = useNavigate();
   const location = useLocation();
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout>(null);
   const currentRouteIndexRef = useRef(0);
 
   // Define the rotation sequence for non-CA users
@@ -132,4 +132,3 @@ export const useInactivityRotation = (
     rotationSequence,
   };
 };
-

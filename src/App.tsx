@@ -53,7 +53,7 @@ const PageRoutes = () => {
   const { isAuthenticated } = useAuthContext();
   console.log(isAuthenticated);
   const location = useLocation();
-  
+
   // Check if user has career associate access
   const hasCareerAccess = isCareerAssociate();
 
@@ -79,26 +79,9 @@ const PageRoutes = () => {
                 </PageTransition>
               }
             />
-            <Route
-              path="/marketplace"
-              element={
-                <PageTransition>
-                  <Marketplace />
-                </PageTransition>
-              }
-            />
-            
-            {/* Routes only available to career associates */}
+
             {hasCareerAccess ? (
               <>
-                <Route
-                  path="/avatar"
-                  element={
-                    <PageTransition>
-                      <AvatarSelection />
-                    </PageTransition>
-                  }
-                />
                 <Route
                   path="/dashboard"
                   element={
@@ -115,24 +98,19 @@ const PageRoutes = () => {
                     </PageTransition>
                   }
                 />
+                <Route
+                  path="/marketplace"
+                  element={
+                    <PageTransition>
+                      <Marketplace />
+                    </PageTransition>
+                  }
+                />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
               </>
             ) : (
               <>
-                {/* Non-career associates have limited access */}
                 <Route path="/" element={<Navigate to="/spaces" />} />
-                {/* Allow access to settings for avatar configuration */}
-                <Route
-                  path="/settings"
-                  element={
-                    <PageTransition>
-                      <Settings />
-                    </PageTransition>
-                  }
-                />
-                {/* Redirect other restricted routes to spaces for non-access users */}
-                <Route path="/dashboard" element={<Navigate to="/spaces" />} />
-                <Route path="/avatar" element={<Navigate to="/spaces" />} />
               </>
             )}
           </>
@@ -146,9 +124,9 @@ const PageRoutes = () => {
                 </PageTransition>
               }
             />
-            <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </AnimatePresence>
   );
