@@ -11,6 +11,7 @@ import {
   X,
   LucideIcon,
   ShoppingCart,
+  Users,
 } from "lucide-react";
 import Logo from "./Logo";
 import { colors, fonts, spacing } from "../utils/theme";
@@ -38,6 +39,7 @@ const Sidebar: React.FC = () => {
       icon: Trophy,
       path: "/leaderboard",
     },
+    { id: "teamvsteam", label: "Team Vs Team", icon: Users, path: "/team-vs-team" },
     { id: "spaces", label: "Spaces", icon: Grid3X3, path: "/spaces" },
     { id: "marketplace", label: "Marketplace", icon: ShoppingCart, path: "/marketplace" },
     { id: "settings", label: "Settings", icon: Settings, path: "/settings" },

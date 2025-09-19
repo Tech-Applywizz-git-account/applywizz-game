@@ -12,6 +12,7 @@ import AvatarSelection from "./pages/AvatarSelection";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Marketplace from "./pages/Marketplace";
+import TeamVsTeam from "./pages/TeamVsTeam";
 import { Leaderboard, Spaces } from "./pages/UnderConstruction";
 import "./App.css";
 import { AuthContextProvider } from "./contexts/contexts";
@@ -68,6 +69,14 @@ const PageRoutes = () => {
               element={
                 <PageTransition>
                   <Leaderboard />
+                </PageTransition>
+              }
+            />
+            <Route
+              path="/team-vs-team"
+              element={
+                <PageTransition>
+                  <TeamVsTeam />
                 </PageTransition>
               }
             />
