@@ -1019,91 +1019,152 @@ const useHP = () => {
   };
 };
 /**
- * Team HP Bar component for non-access users in Spaces
+ * Individual Team HP Bar component using PNG assets
  */
-const TeamHPBar: React.FC = () => {
-  const { hp, total_hp, clampedHP, isLoading } = useHP();
+interface TeamHealthBarProps {
+  teamName: string;
+  teamColor: "red" | "green";
+  hp: number;
+  total_hp: number;
+}
 
-  // Fallback data for when backend is unavailable
-
-  // Only show loading if we're actually loading and don't have an error yet
-  if (isLoading) return <div>Loading...</div>;
-
-  const fillWidth = (clampedHP / total_hp) * BAR_WIDTH;
+const TeamHealthBar: React.FC<TeamHealthBarProps> = ({ teamName, teamColor, hp, total_hp }) => {
+  const clampedHP = Math.max(0, Math.min(hp || 0, total_hp || 1000));
+  const fillPercentage = (clampedHP / total_hp) * 100;
+  
+  const barAssets = {
+    red: {
+      background: "/assets/teamvsteam/ui/Red_Bar_Bg.png",
+      fill: "/assets/teamvsteam/ui/Red_Bar.png"
+    },
+    green: {
+      background: "/assets/teamvsteam/ui/Green_Bar_Bg.png", 
+      fill: "/assets/teamvsteam/ui/Green_Bar.png"
+    }
+  };
 
   return (
     <motion.div
       style={{
-        marginTop: spacing.xl,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: spacing.sm,
+      }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6, delay: teamColor === "red" ? 0 : 0.2 }}
+    >
+      {/* Team Label */}
+      <div
+        style={{
+          color: teamColor === "red" ? "#ff4444" : "#44ff44",
+          fontSize: "1rem",
+          fontWeight: "700",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+        }}
+      >
+        {teamName} Team
+      </div>
+
+      {/* Health Bar Container */}
+      <div
+        style={{
+          position: "relative",
+          width: "200px",
+          height: "40px",
+        }}
+      >
+        {/* Background Image */}
+        <img
+          src={barAssets[teamColor].background}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+          }}
+          alt={`${teamName} team health bar background`}
+        />
+        
+        {/* Fill Image with clip-path for health level */}
+        <motion.img
+          src={barAssets[teamColor].fill}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            clipPath: `inset(0 ${100 - fillPercentage}% 0 0)`,
+          }}
+          initial={{ clipPath: "inset(0 100% 0 0)" }}
+          animate={{ clipPath: `inset(0 ${100 - fillPercentage}% 0 0)` }}
+          transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+          alt={`${teamName} team health bar fill`}
+        />
+      </div>
+
+      {/* HP Numbers */}
+      <div
+        style={{
+          color: colors.textPrimary,
+          fontSize: "0.9rem",
+          fontWeight: "600",
+          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+        }}
+      >
+        {hp}/{total_hp} HP
+      </div>
+    </motion.div>
+  );
+};
+
+/**
+ * Team HP Bar component for non-access users in Spaces - Now shows both teams
+ */
+const TeamHPBar: React.FC = () => {
+  const { hp, total_hp, clampedHP, isLoading } = useHP();
+
+  // Only show loading if we're actually loading and don't have an error yet
+  if (isLoading) return <div>Loading...</div>;
+
+  // For now, we'll simulate Red and Green team HP based on the current HP
+  // In a real implementation, you might fetch separate team HP data
+  const redTeamHP = Math.floor(hp * 0.6); // Red team has 60% of total HP
+  const greenTeamHP = hp - redTeamHP; // Green team has the remaining HP
+
+  return (
+    <motion.div
+      style={{
+        marginTop: spacing.md,
         textAlign: "center",
+        display: "flex",
+        justifyContent: "center",
+        gap: spacing["2xl"],
+        flexWrap: "wrap",
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.7 }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: spacing.sm,
-          width: BAR_WIDTH,
-          margin: "0 auto",
-        }}
-      >
-        <span
-          style={{
-            color: colors.textSecondary,
-            fontSize: "0.9rem",
-            fontWeight: 600,
-          }}
-        >
-          Team Power Level
-        </span>
-        <span
-          style={{
-            color: colors.textPrimary,
-            fontSize: "1rem",
-            fontWeight: 700,
-          }}
-        >
-          {hp}/{total_hp}
-        </span>
-      </div>
-
-      <div
-        style={{
-          width: BAR_WIDTH,
-          height: "16px",
-          backgroundColor: colors.hpBackground,
-          borderRadius: "8px",
-          position: "relative",
-          overflow: "hidden",
-          margin: "0 auto",
-        }}
-      >
-        <motion.div
-          style={{
-            height: "100%",
-            backgroundColor:
-              clampedHP > total_hp * 0.7
-                ? colors.hpFull
-                : clampedHP > total_hp * 0.3
-                ? colors.hpMedium
-                : colors.hpLow,
-            borderRadius: "8px",
-            boxShadow:
-              clampedHP > total_hp * 0.7
-                ? `0 0 10px ${colors.hpFull}40`
-                : clampedHP > total_hp * 0.3
-                ? `0 0 10px ${colors.hpMedium}40`
-                : `0 0 10px ${colors.hpLow}40`,
-          }}
-          initial={{ width: 0 }}
-          animate={{ width: fillWidth }}
-          transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
-        />
-      </div>
+      <TeamHealthBar 
+        teamName="Red" 
+        teamColor="red" 
+        hp={redTeamHP} 
+        total_hp={Math.floor(total_hp * 0.6)} 
+      />
+      <TeamHealthBar 
+        teamName="Green" 
+        teamColor="green" 
+        hp={greenTeamHP} 
+        total_hp={Math.floor(total_hp * 0.4)} 
+      />
     </motion.div>
   );
 };

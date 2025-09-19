@@ -353,10 +353,11 @@ class ArenaScene extends Phaser.Scene {
   private buildAttackers() {
     const width = DESIGN_W;
 
-    const padX = 160;
+    // Increased spacing between character avatars for better separation
+    const padX = 100; // Reduced from 160 to bring characters closer to edges
     const leftX = padX;
     const rightX = width - padX;
-    const platformYTop = 300;
+    const platformYTop = 280; // Moved platforms slightly higher for better visibility
 
     const centers: Record<SlotId, { x: number; y: number }> = {
       TL: { x: leftX, y: platformYTop },
