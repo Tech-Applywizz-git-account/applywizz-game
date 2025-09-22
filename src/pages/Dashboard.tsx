@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Target, TrendingUp, Calendar, Trophy, LucideIcon } from "lucide-react";
+import { Target, TrendingUp, Calendar, Trophy, LucideIcon, Twitch, CloudLightning, FlagIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PhaserThanosGame from "../components/PhaserThanosGame";
 import { Card, CardContent } from "../components/ui/card";
@@ -389,6 +389,18 @@ const Dashboard: React.FC = () => {
       value: all_time_tasks,
       subtitle: "Keep Working Hard",
       color: colors.primary,
+    },
+    {
+      icon: FlagIcon,
+      title: "Streak",
+      value: all_time_tasks,
+      color: colors.secondaryLight,
+    },
+    {
+      icon: Twitch,
+      title: "Badge",
+      value: all_time_tasks,
+      color: colors.textMuted,
     },
   ];
 
