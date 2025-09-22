@@ -15,7 +15,7 @@ import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar"
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useAuthContext, useBackendQuery, useCoinsXP, useBadgeInfo, useUpdateBadge } from "../hooks/hooks";
+import { useAuthContext, useBackendQuery, useCoinsXP, useBadgeInfo } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import { getStoredAvatar, storeAvatar, getDisplayAvatar } from "../utils/avatarUtils";
 import { CareerAssociateOnly, NonCareerAssociateOnly } from "../components/RoleGuards";
@@ -31,7 +31,6 @@ const Settings: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>("week");
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarData | null>(null);
   const [isAvatarSelectionOpen, setIsAvatarSelectionOpen] = useState<boolean>(false);
-  const [badgeInput, setBadgeInput] = useState<string>("");
   const navigator = useNavigate();
 
   const { logout } = useAuthContext();
@@ -71,28 +70,17 @@ const Settings: React.FC = () => {
 
   // Fetch badge and streak data
   const { data: badgeData, isLoading: badgeLoading, error: badgeError } = useBadgeInfo();
-  const updateBadgeMutation = useUpdateBadge();
 
   // Fallback values when API fails
   const userCoins = coinsXPData?.coins ?? 0;
   const userXP = coinsXPData?.xp ?? 0;
 
   // Badge and streak with fallback values
-  const userStreak = badgeData?.streak ?? 0;
-  const userBadge = badgeData?.badge ?? ':('
+  const userStreak = badgeData?.streak ?? null; // Set fallback to null for streak
+  const rawBadge = badgeData?.badge ?? ': ('; // Set fallback to ': (' for badge
 
-  const handleAddBadge = async () => {
-    if (badgeInput.trim()) {
-      try {
-        await updateBadgeMutation.mutateAsync({
-          badge: badgeInput.trim()
-        });
-        setBadgeInput("");
-      } catch (error) {
-        console.error('Failed to update badge:', error);
-      }
-    }
-  };
+  // Convert badge to image if it's a string or non-image, fallback to ": (" as per requirements
+  const userBadge = typeof rawBadge === 'string' && rawBadge.endsWith('.png') ? rawBadge : ': (';
 
   const chartExists = Array.isArray((chartData as any)?.user_data);
 
@@ -335,7 +323,7 @@ const Settings: React.FC = () => {
                           color: colors.textPrimary,
                         }}
                       >
-                        {badgeLoading ? "..." : userStreak}
+                        {badgeLoading ? "..." : userStreak?.toString() || ": ("}
                       </div>
                       <div
                         style={{
@@ -384,69 +372,6 @@ const Settings: React.FC = () => {
                     </div>
                   </motion.div>
                 </div>
-
-                {/* Badge Input Section */}
-                <motion.div
-                  style={{
-                    marginTop: spacing.lg,
-                    padding: spacing.md,
-                    backgroundColor: `${colors.surface}50`,
-                    borderRadius: "8px",
-                    border: `1px solid ${colors.surfaceLight}`,
-                  }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                >
-                  <h3
-                    style={{
-                      fontSize: "1rem",
-                      fontWeight: "600",
-                      color: colors.textPrimary,
-                      margin: `0 0 ${spacing.md} 0`,
-                    }}
-                  >
-                    Update Badge
-                  </h3>
-                  <div style={{ display: "flex", gap: spacing.sm }}>
-                    <input
-                      type="text"
-                      placeholder="Enter new badge..."
-                      value={badgeInput}
-                      onChange={(e) => setBadgeInput(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: spacing.sm,
-                        border: `1px solid ${colors.surfaceLight}`,
-                        borderRadius: "4px",
-                        backgroundColor: colors.surface,
-                        color: colors.textPrimary,
-                        fontSize: "0.9rem",
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddBadge();
-                        }
-                      }}
-                    />
-                    <Button
-                      onClick={handleAddBadge}
-                      disabled={!badgeInput.trim() || updateBadgeMutation.isPending}
-                      style={{
-                        backgroundColor: colors.primary,
-                        color: colors.textPrimary,
-                        border: 'none',
-                        padding: `${spacing.sm} ${spacing.md}`,
-                        borderRadius: '4px',
-                        fontWeight: '600',
-                        fontSize: '0.9rem',
-                        cursor: badgeInput.trim() ? 'pointer' : 'not-allowed',
-                      }}
-                    >
-                      {updateBadgeMutation.isPending ? 'Updating...' : 'Update'}
-                    </Button>
-                  </div>
-                </motion.div>
 
                 {/* Error handling for badges */}
                 {badgeError && (

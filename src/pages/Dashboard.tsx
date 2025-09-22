@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import PhaserThanosGame from "../components/PhaserThanosGame";
 import { Card, CardContent } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useBackendQuery } from "../hooks/hooks";
+import { useBackendQuery, useBadgeInfo } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import {
   RoleFallbackUI,
@@ -330,6 +330,9 @@ const Dashboard: React.FC = () => {
     error,
   } = useBackendQuery("progress", "/tasks-info");
 
+  // Fetch badge and streak data
+  const { data: badgeData, isLoading: badgeLoading, error: badgeError } = useBadgeInfo();
+
   // Get Thanos death state for battle management
 
   useEffect(() => {
@@ -348,6 +351,17 @@ const Dashboard: React.FC = () => {
     months_progress: "78% Complete",
     all_time_tasks: "342",
   };
+
+  // Fallback values for badge and streak as per requirements
+  const fallbackStreak = null; // Set to null as per requirements
+  const fallbackBadge = ": ("; // Set to ": (" as per requirements
+
+  // Get badge and streak with fallback handling
+  const userStreak = badgeError || !badgeData ? fallbackStreak : badgeData?.streak ?? fallbackStreak;
+  const userBadge = badgeError || !badgeData ? fallbackBadge : badgeData?.badge ?? fallbackBadge;
+
+  // Convert badge to image if it's a string or non-image, fallback to ": (" as per requirements
+  const badgeDisplay = typeof userBadge === 'string' && userBadge.endsWith('.png') ? userBadge : fallbackBadge;
 
   const data = error || !progress_data ? fallbackProgressData : progress_data;
 
@@ -393,13 +407,13 @@ const Dashboard: React.FC = () => {
     {
       icon: FlagIcon,
       title: "Streak",
-      value: all_time_tasks,
+      value: userStreak?.toString() || ": (",
       color: colors.secondaryLight,
     },
     {
       icon: Twitch,
       title: "Badge",
-      value: all_time_tasks,
+      value: badgeDisplay,
       color: colors.textMuted,
     },
   ];
