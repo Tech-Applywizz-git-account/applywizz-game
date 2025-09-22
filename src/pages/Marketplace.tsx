@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useCoinsXP } from "../hooks/hooks";
+import { useCoinsXP, usePurchaseItem, useOwnedItems } from "../hooks/hooks";
 
 // Sprite data structure
 interface SpriteData {
@@ -272,27 +272,53 @@ const SpriteCard: React.FC<SpriteCardProps> = ({ sprite, userCoins, onPurchase }
 const Marketplace: React.FC = () => {
   const [sprites, setSprites] = useState<SpriteData[]>(AVAILABLE_SPRITES);
   const { data: coinsXPData, isLoading: coinsLoading, error: coinsError } = useCoinsXP();
+  const { data: ownedItemsData, isLoading: ownedLoading, error: ownedError } = useOwnedItems();
+  const purchaseItemMutation = usePurchaseItem();
 
   // Fallback values when API fails
   const userCoins = coinsXPData?.coins ?? 0;
   const userXP = coinsXPData?.xp ?? 0;
 
-  const handlePurchase = (spriteId: string) => {
+  // Update sprites ownership based on API data
+  useEffect(() => {
+    if (ownedItemsData && Array.isArray(ownedItemsData)) {
+      setSprites(prev => 
+        prev.map(sprite => ({
+          ...sprite,
+          owned: ownedItemsData.some((item: any) => 
+            item.item_name === sprite.name && item.item_type === 'avatar'
+          )
+        }))
+      );
+    }
+  }, [ownedItemsData]);
+
+  const handlePurchase = async (spriteId: string) => {
     const sprite = sprites.find(s => s.id === spriteId);
     if (!sprite || sprite.owned || userCoins < sprite.price) return;
 
-    // Update sprite as owned (in real app, this would be an API call)
-    setSprites(prev => 
-      prev.map(s => 
-        s.id === spriteId ? { ...s, owned: true } : s
-      )
-    );
+    try {
+      // Make API call to purchase the avatar
+      await purchaseItemMutation.mutateAsync({
+        item_name: sprite.name,
+        item_type: 'avatar'
+      });
 
-    // Store selected sprite in localStorage for PhaserThanosGame
-    localStorage.setItem('selectedSprite', spriteId);
-    
-    // TODO: Make API call to purchase sprite and deduct coins
-    console.log(`Purchased ${sprite.displayName} for ${sprite.price} coins`);
+      // Update local state immediately for better UX
+      setSprites(prev => 
+        prev.map(s => 
+          s.id === spriteId ? { ...s, owned: true } : s
+        )
+      );
+
+      // Store selected sprite in localStorage for PhaserThanosGame
+      localStorage.setItem('selectedSprite', spriteId);
+      
+      console.log(`Successfully purchased ${sprite.displayName} for ${sprite.price} coins`);
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      // Could add toast notification here
+    }
   };
 
   return (

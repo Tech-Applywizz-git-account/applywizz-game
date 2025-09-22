@@ -23,7 +23,7 @@ import {
   CardDescription,
 } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useAuthContext } from "../hooks/hooks";
+import { useAuthContext, useSelectAvatar } from "../hooks/hooks";
 import { backendPostRequest } from "../lib/backendRequest";
 
 const avatarIds = getAvailableAvatarIds();
@@ -34,18 +34,25 @@ const AvatarSelection: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
   const { token } = useAuthContext();
+  const selectAvatarMutation = useSelectAvatar();
 
   const handleContinue = async (): Promise<void> => {
     if (selectedAvatar && !isSubmitting) {
       setIsSubmitting(true);
 
       try {
-        // Send POST request to backend with avatar data
+        // Send POST request to backend with avatar data for initial selection
         await backendPostRequest(
           "/avatar-info",
           token as string,
           selectedAvatar
         );
+
+        // If we have a valid avatar name, also call the select-avatar endpoint
+        const avatarName = `avatar_${selectedAvatar.id.toString().padStart(2, '0')}`;
+        await selectAvatarMutation.mutateAsync({
+          item_name: avatarName
+        });
 
         // Store selected avatar in localStorage with the new simplified format
         localStorage.setItem("avatar", JSON.stringify(selectedAvatar));
