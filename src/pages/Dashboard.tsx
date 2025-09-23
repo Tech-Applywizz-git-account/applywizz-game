@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Target, TrendingUp, Calendar, Trophy, LucideIcon, CloudLightning, FlagIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PhaserThanosGame from "../components/PhaserThanosGame";
+import BadgeDisplay from "../components/BadgeDisplay";
 import { Card, CardContent } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useBackendQuery, useBadgeInfo } from "../hooks/hooks";
@@ -405,40 +406,17 @@ const BadgeCard: React.FC<BadgeCardProps> = ({
                   zIndex: 2,
                 }}
               >
-                {badgeImage ? (
-                  <img
-                    src={badgeImage}
-                    alt="Badge"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      objectFit: "contain",
-                      borderRadius: "4px",
-                    }}
-                    onError={(e) => {
-                      // If image fails to load, show fallback
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                
-                {/* Fallback display - shown when no badge image or image fails */}
-                <div
+                <BadgeDisplay
+                  badgeText={badgeText}
+                  badgeImageUrl={badgeImage}
+                  size={32}
                   style={{
-                    display: badgeImage ? 'none' : 'flex',
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "32px",
-                    height: "32px",
+                    borderRadius: "4px",
                     fontSize: "0.75rem",
                     fontWeight: "600",
                     color: colors.textSecondary,
                   }}
-                >
-                  N/A
-                </div>
+                />
               </div>
             </div>
 

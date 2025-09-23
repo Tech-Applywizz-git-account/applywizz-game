@@ -14,6 +14,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import FloatingNavbar from "../components/FloatingNavbar";
 import Avatar from "../components/Avatar";
+import AnimatedAvatar from "../components/AnimatedAvatar";
+import BadgeDisplay from "../components/BadgeDisplay";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery, useBadgeInfo } from "../hooks/hooks";
@@ -861,13 +863,46 @@ export const Leaderboard: React.FC = () => {
                         fontSize: "2rem",
                         color: colors.secondary,
                         fontWeight: "700",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        minHeight: "2.5rem",
                       }}
                     >
-                      {badgeLoading ? "..." : (badgeData?.badge || "N/A")}
+                      {badgeLoading ? "..." : (
+                        <BadgeDisplay
+                          badgeText={badgeData?.badge}
+                          badgeImageUrl={badgeData?.badgeImageUrl || badgeData?.badge_image}
+                          size={40}
+                        />
+                      )}
                     </div>
                     <div>Current Badge</div>
                     <div style={{ color: colors.textMuted }}>
                       {badgeData?.badge ? "Active" : "Not available"}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Avatar Card */}
+                <Card>
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginBottom: spacing.sm,
+                      }}
+                    >
+                      <AnimatedAvatar
+                        selectedSprite={localStorage.getItem('selectedSprite') || undefined}
+                        size={80}
+                      />
+                    </div>
+                    <div>Selected Avatar</div>
+                    <div style={{ color: colors.textMuted }}>
+                      {localStorage.getItem('selectedSprite') || 'Fighter'}
                     </div>
                   </div>
                 </Card>
@@ -1002,34 +1037,17 @@ export const Leaderboard: React.FC = () => {
                         <span style={{ fontSize: "0.85rem", color: colors.textSecondary }}>
                           Badge: 
                         </span>
-                        {(entry as any).badge_image ? (
-                          <img
-                            src={(entry as any).badge_image}
-                            alt="Badge"
-                            style={{
-                              width: "20px",
-                              height: "20px",
-                              objectFit: "contain",
-                              borderRadius: "3px",
-                            }}
-                            onError={(e) => {
-                              // If image fails to load, show fallback
-                              e.currentTarget.style.display = 'none';
-                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                              if (fallback) fallback.style.display = 'inline';
-                            }}
-                          />
-                        ) : null}
-                        <span 
-                          style={{ 
-                            display: (entry as any).badge_image ? 'none' : 'inline',
-                            fontSize: "0.85rem", 
+                        <BadgeDisplay
+                          badgeText={(entry as any).badge}
+                          badgeImageUrl={(entry as any).badge_image}
+                          size={20}
+                          style={{
+                            borderRadius: "3px",
+                            fontSize: "0.85rem",
                             color: colors.textMuted,
-                            fontStyle: "italic"
+                            fontStyle: (entry as any).badge_image ? undefined : "italic"
                           }}
-                        >
-                          {(entry as any).badge || "N/A"}
-                        </span>
+                        />
                       </div>
                     )}
                   </div>
