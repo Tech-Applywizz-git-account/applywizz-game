@@ -14,6 +14,7 @@ import {
 import Sidebar from "../components/Sidebar";
 import FloatingNavbar from "../components/FloatingNavbar";
 import Avatar from "../components/Avatar";
+import AnimatedAvatar from "../components/AnimatedAvatar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery, useBadgeInfo } from "../hooks/hooks";
@@ -23,6 +24,7 @@ import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
 import { isCareerAssociate } from "../utils/roleUtils";
 import { getDisplayAvatar } from "../utils/avatarUtils";
+import { getBadgeImagePath, isValidBadge } from "../utils/badgeUtils";
 
 interface UnderConstructionProps {
   title: string;
@@ -853,21 +855,92 @@ export const Leaderboard: React.FC = () => {
                   </div>
                 </Card>
 
-                {/* Badge Card */}
+                {/* Badge Card - Updated to show PNG images */}
                 <Card>
                   <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: "2rem",
-                        color: colors.secondary,
-                        fontWeight: "700",
-                      }}
-                    >
-                      {badgeLoading ? "..." : (badgeData?.badge || "N/A")}
-                    </div>
+                    {(() => {
+                      const badgeName = badgeData?.badge;
+                      const badgeImagePath = getBadgeImagePath(badgeName);
+                      
+                      if (badgeLoading) {
+                        return (
+                          <div
+                            style={{
+                              fontSize: "2rem",
+                              color: colors.secondary,
+                              fontWeight: "700",
+                            }}
+                          >
+                            ...
+                          </div>
+                        );
+                      }
+                      
+                      if (badgeImagePath) {
+                        return (
+                          <div style={{ display: "flex", justifyContent: "center", marginBottom: spacing.sm }}>
+                            <img
+                              src={badgeImagePath}
+                              alt={`${badgeName} Badge`}
+                              style={{
+                                width: "48px",
+                                height: "48px",
+                                objectFit: "contain",
+                                filter: "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))",
+                              }}
+                              onError={(e) => {
+                                // Fallback to text if image fails to load
+                                const target = e.currentTarget;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `<div style="font-size: 2rem; color: ${colors.secondary}; font-weight: 700;">${badgeName || "N/A"}</div>`;
+                                }
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div
+                          style={{
+                            fontSize: "2rem",
+                            color: colors.secondary,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {badgeName || "N/A"}
+                        </div>
+                      );
+                    })()}
                     <div>Current Badge</div>
                     <div style={{ color: colors.textMuted }}>
                       {badgeData?.badge ? "Active" : "Not available"}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Avatar Card - New animated avatar section */}
+                <Card>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: spacing.sm }}>
+                      <AnimatedAvatar
+                        sprite={(() => {
+                          const selectedSprite = localStorage.getItem('selectedSprite');
+                          return selectedSprite || 'Fighter';
+                        })()}
+                        size={48}
+                        style={{
+                          border: `2px solid ${colors.primary}20`,
+                          borderRadius: '8px',
+                          background: `linear-gradient(135deg, ${colors.primary}05 0%, ${colors.secondary}05 100%)`,
+                        }}
+                      />
+                    </div>
+                    <div>Selected Avatar</div>
+                    <div style={{ color: colors.textMuted }}>
+                      Playing idle animation
                     </div>
                   </div>
                 </Card>
@@ -1002,27 +1075,38 @@ export const Leaderboard: React.FC = () => {
                         <span style={{ fontSize: "0.85rem", color: colors.textSecondary }}>
                           Badge: 
                         </span>
-                        {(entry as any).badge_image ? (
-                          <img
-                            src={(entry as any).badge_image}
-                            alt="Badge"
-                            style={{
-                              width: "20px",
-                              height: "20px",
-                              objectFit: "contain",
-                              borderRadius: "3px",
-                            }}
-                            onError={(e) => {
-                              // If image fails to load, show fallback
-                              e.currentTarget.style.display = 'none';
-                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                              if (fallback) fallback.style.display = 'inline';
-                            }}
-                          />
-                        ) : null}
+                        {(() => {
+                          const badgeName = (entry as any).badge;
+                          const badgeImagePath = getBadgeImagePath(badgeName);
+                          
+                          if (badgeImagePath) {
+                            return (
+                              <img
+                                src={badgeImagePath}
+                                alt={`${badgeName} Badge`}
+                                style={{
+                                  width: "20px",
+                                  height: "20px",
+                                  objectFit: "contain",
+                                  borderRadius: "3px",
+                                  filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
+                                }}
+                                onError={(e) => {
+                                  // If image fails to load, show fallback text
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'inline';
+                                }}
+                              />
+                            );
+                          }
+                          
+                          return null;
+                        })()}
                         <span 
                           style={{ 
-                            display: (entry as any).badge_image ? 'none' : 'inline',
+                            display: getBadgeImagePath((entry as any).badge) ? 'none' : 'inline',
                             fontSize: "0.85rem", 
                             color: colors.textMuted,
                             fontStyle: "italic"
