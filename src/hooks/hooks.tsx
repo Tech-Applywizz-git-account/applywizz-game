@@ -104,21 +104,4 @@ export const useBadgeInfo = () => {
   });
 };
 
-// Hook for adding/updating badge
-export const useUpdateBadge = () => {
-  const { token } = useAuthContext();
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (badgeData: any) => {
-      return await backendPostRequest('/badge', token as string, badgeData);
-    },
-    onSuccess: () => {
-      // Invalidate and refetch badge data after successful update
-      queryClient.invalidateQueries({ queryKey: ['badge-info'] });
-    },
-    onError: (error) => {
-      console.error('Badge update failed:', error);
-    }
-  });
-};
+

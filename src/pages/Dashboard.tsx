@@ -14,6 +14,14 @@ import {
   NoDataUI,
 } from "../components/FallbackComponents";
 
+// Helper function to get badge image URL from badge name
+const getBadgeImageUrl = (badgeName: string | null | undefined): string | null => {
+  if (!badgeName || badgeName === 'N/A') {
+    return null;
+  }
+  return `/assets/badges/${badgeName}.png`;
+};
+
 interface ProgressCardProps {
   icon: LucideIcon;
   title: string;
@@ -587,14 +595,14 @@ const Dashboard: React.FC = () => {
     {
       icon: FlagIcon,
       title: "Streak",
-      value: badgeData?.streak?.toString() || all_time_tasks,
+      value: badgeData?.streak?.toString() || "0",
       color: colors.secondaryLight,
     },
   ];
 
   // Badge data with fallback values
-  const userBadge = badgeData?.badge;
-  const badgeImageUrl = badgeData?.badgeImageUrl || badgeData?.badge_image;
+  const userBadge = badgeData?.badge || "N/A";
+  const badgeImageUrl = getBadgeImageUrl(badgeData?.badge);
 
   return (
     <div

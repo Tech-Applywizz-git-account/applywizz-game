@@ -15,7 +15,7 @@ import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar"
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useAuthContext, useBackendQuery, useCoinsXP, useBadgeInfo, useUpdateBadge } from "../hooks/hooks";
+import { useAuthContext, useBackendQuery, useCoinsXP, useBadgeInfo, useOwnedItems } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import { getStoredAvatar, storeAvatar, getDisplayAvatar } from "../utils/avatarUtils";
 import { CareerAssociateOnly, NonCareerAssociateOnly } from "../components/RoleGuards";
@@ -27,11 +27,38 @@ import {
 } from "../components/FallbackComponents";
 import { useNavigate } from "react-router-dom";
 
+// Helper function to get badge image URL from badge name
+const getBadgeImageUrl = (badgeName: string | null | undefined): string | null => {
+  if (!badgeName || badgeName === 'N/A') {
+    return null;
+  }
+  return `/assets/badges/${badgeName}.png`;
+};
+
+// Helper function to get owned avatar IDs from owned items data
+const getOwnedAvatarIds = (ownedItems: any[]): number[] => {
+  if (!Array.isArray(ownedItems)) {
+    return getAvailableAvatarIds(); // Fallback to all avatars if no data
+  }
+  
+  // Filter for avatar items and extract their IDs
+  const ownedAvatars = ownedItems
+    .filter(item => item.item_type === 'avatar' && item.item_name)
+    .map(item => {
+      // Extract ID from avatar name (assuming format like 'avatar_01' -> 1)
+      const match = item.item_name.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : null;
+    })
+    .filter(id => id !== null);
+  
+  // If no owned avatars found, return a default avatar (1) so user can at least select something
+  return ownedAvatars.length > 0 ? ownedAvatars : [1];
+};
+
 const Settings: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>("week");
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarData | null>(null);
   const [isAvatarSelectionOpen, setIsAvatarSelectionOpen] = useState<boolean>(false);
-  const [badgeInput, setBadgeInput] = useState<string>("");
   const navigator = useNavigate();
 
   const { logout } = useAuthContext();
@@ -71,29 +98,19 @@ const Settings: React.FC = () => {
 
   // Fetch badge and streak data
   const { data: badgeData, isLoading: badgeLoading, error: badgeError } = useBadgeInfo();
-  const updateBadgeMutation = useUpdateBadge();
+
+  // Fetch owned items for avatar selection
+  const { data: ownedItems, isLoading: ownedLoading, error: ownedError } = useOwnedItems();
 
   // Fallback values when API fails
   const userCoins = coinsXPData?.coins ?? 0;
   const userXP = coinsXPData?.xp ?? 0;
 
-  // Badge and streak with fallback values
+  // Get owned avatar IDs for selection restriction
+  const ownedAvatarIds = getOwnedAvatarIds(ownedItems);
   const userStreak = badgeData?.streak ?? 0;
-  const userBadge = badgeData?.badge ?? ':('
-  const badgeImageUrl = badgeData?.badgeImageUrl || badgeData?.badge_image;
-
-  const handleAddBadge = async () => {
-    if (badgeInput.trim()) {
-      try {
-        await updateBadgeMutation.mutateAsync({
-          badge: badgeInput.trim()
-        });
-        setBadgeInput("");
-      } catch (error) {
-        console.error('Failed to update badge:', error);
-      }
-    }
-  };
+  const userBadge = badgeData?.badge ?? 'N/A'
+  const badgeImageUrl = getBadgeImageUrl(badgeData?.badge);
 
   const chartExists = Array.isArray((chartData as any)?.user_data);
 
@@ -430,68 +447,32 @@ const Settings: React.FC = () => {
                   </motion.div>
                 </div>
 
-                {/* Badge Input Section */}
-                <motion.div
-                  style={{
-                    marginTop: spacing.lg,
-                    padding: spacing.md,
-                    backgroundColor: `${colors.surface}50`,
-                    borderRadius: "8px",
-                    border: `1px solid ${colors.surfaceLight}`,
-                  }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                >
-                  <h3
+                {/* Error handling for owned items */}
+                {ownedError && (
+                  <motion.div
                     style={{
-                      fontSize: "1rem",
-                      fontWeight: "600",
-                      color: colors.textPrimary,
-                      margin: `0 0 ${spacing.md} 0`,
+                      marginTop: spacing.md,
+                      padding: spacing.sm,
+                      backgroundColor: `${colors.warning}10`,
+                      borderRadius: "6px",
+                      border: `1px solid ${colors.warning}30`,
                     }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9 }}
                   >
-                    Update Badge
-                  </h3>
-                  <div style={{ display: "flex", gap: spacing.sm }}>
-                    <input
-                      type="text"
-                      placeholder="Enter new badge..."
-                      value={badgeInput}
-                      onChange={(e) => setBadgeInput(e.target.value)}
+                    <p
                       style={{
-                        flex: 1,
-                        padding: spacing.sm,
-                        border: `1px solid ${colors.surfaceLight}`,
-                        borderRadius: "4px",
-                        backgroundColor: colors.surface,
-                        color: colors.textPrimary,
-                        fontSize: "0.9rem",
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddBadge();
-                        }
-                      }}
-                    />
-                    <Button
-                      onClick={handleAddBadge}
-                      disabled={!badgeInput.trim() || updateBadgeMutation.isPending}
-                      style={{
-                        backgroundColor: colors.primary,
-                        color: colors.textPrimary,
-                        border: 'none',
-                        padding: `${spacing.sm} ${spacing.md}`,
-                        borderRadius: '4px',
-                        fontWeight: '600',
-                        fontSize: '0.9rem',
-                        cursor: badgeInput.trim() ? 'pointer' : 'not-allowed',
+                        margin: 0,
+                        color: colors.textSecondary,
+                        fontSize: "0.8rem",
+                        textAlign: "center",
                       }}
                     >
-                      {updateBadgeMutation.isPending ? 'Updating...' : 'Update'}
-                    </Button>
-                  </div>
-                </motion.div>
+                      ⚠️ Unable to load owned avatars. Showing all avatars.
+                    </p>
+                  </motion.div>
+                )}
 
                 {/* Error handling for badges */}
                 {badgeError && (
@@ -657,7 +638,7 @@ const Settings: React.FC = () => {
                       borderRadius: "8px",
                     }}
                   >
-                    {getAvailableAvatarIds().map((avatarId) => (
+                    {ownedAvatarIds.map((avatarId) => (
                       <motion.div
                         key={avatarId}
                         style={{ textAlign: "center" }}
