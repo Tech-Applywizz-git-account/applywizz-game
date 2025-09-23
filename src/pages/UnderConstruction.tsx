@@ -969,11 +969,47 @@ export const Leaderboard: React.FC = () => {
                     )}
                   </div>
                   <div style={{ flex: 1, marginLeft: spacing.md }}>
-                    <h3 style={{ margin: 0 }}>
+                    <h3 style={{ margin: 0, marginBottom: spacing.xs }}>
                       {activeTab === "team"
                         ? (entry as any).team_name
-                        : (entry as any).username}
+                        : (entry as any).username || (entry as any).name}
                     </h3>
+                    {/* Badge display for individual entries */}
+                    {activeTab === "individual" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: spacing.xs }}>
+                        <span style={{ fontSize: "0.85rem", color: colors.textSecondary }}>
+                          Badge: 
+                        </span>
+                        {(entry as any).badge_image ? (
+                          <img
+                            src={(entry as any).badge_image}
+                            alt="Badge"
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              objectFit: "contain",
+                              borderRadius: "3px",
+                            }}
+                            onError={(e) => {
+                              // If image fails to load, show fallback
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'inline';
+                            }}
+                          />
+                        ) : null}
+                        <span 
+                          style={{ 
+                            display: (entry as any).badge_image ? 'none' : 'inline',
+                            fontSize: "0.85rem", 
+                            color: colors.textMuted,
+                            fontStyle: "italic"
+                          }}
+                        >
+                          {(entry as any).badge || "N/A"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div style={{ fontWeight: "700" }}>
                     {activeTab === "team"
@@ -1130,6 +1166,25 @@ export const Spaces: React.FC = () => {
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
+    // Get user's selected avatar from localStorage
+    const selectedSprite = localStorage.getItem('selectedSprite') || 'Fighter';
+    
+    // Map sprite names to character IDs for FourPlayerArena
+    const spriteToCharacterId = {
+      'Fighter': 'fighter',
+      'Girl_1': 'fighter', // Map to fighter since Girl_1 isn't in FourPlayerArena
+      'Pyromancer_1': 'fighter',
+      'Pyromancer_2': 'fighter', 
+      'Pyromancer_3': 'fighter',
+      'Samurai': 'samurai',
+      'Samurai2': 'samurai2',
+      'Samurai3': 'samurai3',
+      'SamuraiArcher': 'samuraiArcher',
+      'Shinobi': 'shinobi',
+    };
+    
+    const userCharacterId = spriteToCharacterId[selectedSprite as keyof typeof spriteToCharacterId] || 'fighter';
+
     if (topFourData && Array.isArray(topFourData.users)) {
       // Extract usernames from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
@@ -1137,13 +1192,14 @@ export const Spaces: React.FC = () => {
 
       return users.map((user: any, index: number) => ({
         uname: user.username || `User${index + 1}`,
-        characterId: characterIds[index] || "samurai",
+        // Use user's selected avatar for the first player, others use predefined
+        characterId: index === 0 ? userCharacterId : (characterIds[index] || "samurai"),
       }));
     }
 
     // Default fallback data for career associates or when API fails
     return [
-      { uname: "u1", characterId: "samurai" },
+      { uname: "You", characterId: userCharacterId }, // Use user's selected avatar
       { uname: "u2", characterId: "shinobi" },
       { uname: "u3", characterId: "samurai2" },
       { uname: "u4", characterId: "samuraiArcher" },
