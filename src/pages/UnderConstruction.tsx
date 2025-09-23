@@ -1166,6 +1166,25 @@ export const Spaces: React.FC = () => {
 
   // Prepare players data for FourPlayerArena
   const getPlayersData = () => {
+    // Get user's selected avatar from localStorage
+    const selectedSprite = localStorage.getItem('selectedSprite') || 'Fighter';
+    
+    // Map sprite names to character IDs for FourPlayerArena
+    const spriteToCharacterId = {
+      'Fighter': 'fighter',
+      'Girl_1': 'fighter', // Map to fighter since Girl_1 isn't in FourPlayerArena
+      'Pyromancer_1': 'fighter',
+      'Pyromancer_2': 'fighter', 
+      'Pyromancer_3': 'fighter',
+      'Samurai': 'samurai',
+      'Samurai2': 'samurai2',
+      'Samurai3': 'samurai3',
+      'SamuraiArcher': 'samuraiArcher',
+      'Shinobi': 'shinobi',
+    };
+    
+    const userCharacterId = spriteToCharacterId[selectedSprite as keyof typeof spriteToCharacterId] || 'fighter';
+
     if (topFourData && Array.isArray(topFourData.users)) {
       // Extract usernames from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
@@ -1173,13 +1192,14 @@ export const Spaces: React.FC = () => {
 
       return users.map((user: any, index: number) => ({
         uname: user.username || `User${index + 1}`,
-        characterId: characterIds[index] || "samurai",
+        // Use user's selected avatar for the first player, others use predefined
+        characterId: index === 0 ? userCharacterId : (characterIds[index] || "samurai"),
       }));
     }
 
     // Default fallback data for career associates or when API fails
     return [
-      { uname: "u1", characterId: "samurai" },
+      { uname: "You", characterId: userCharacterId }, // Use user's selected avatar
       { uname: "u2", characterId: "shinobi" },
       { uname: "u3", characterId: "samurai2" },
       { uname: "u4", characterId: "samuraiArcher" },
