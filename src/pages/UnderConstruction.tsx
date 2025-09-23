@@ -16,7 +16,7 @@ import FloatingNavbar from "../components/FloatingNavbar";
 import Avatar from "../components/Avatar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useAuthContext, useBackendQuery } from "../hooks/hooks";
+import { useAuthContext, useBackendQuery, useBadgeInfo } from "../hooks/hooks";
 import { useInactivityRotation } from "../hooks/useInactivityRotation";
 import { useLeaderboardAutoScroll } from "../hooks/useLeaderboardAutoScroll";
 import { decodeJwt } from "jose";
@@ -680,6 +680,9 @@ export const Leaderboard: React.FC = () => {
   // For non-access users, always set period to "today"
   const [period, setPeriod] = useState<PeriodType>("today");
 
+  // Fetch badge info for career associates
+  const { data: badgeData, isLoading: badgeLoading, error: badgeError } = useBadgeInfo();
+
   // Update activeTab when location state changes (for auto-rotation)
   useEffect(() => {
     if (routeActiveTab && routeActiveTab !== activeTab) {
@@ -846,6 +849,25 @@ export const Leaderboard: React.FC = () => {
                             personalProgress.completedTasks
                           )} completed`
                         : "NA"}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Badge Card */}
+                <Card>
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "2rem",
+                        color: colors.secondary,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {badgeLoading ? "..." : (badgeData?.badge || "N/A")}
+                    </div>
+                    <div>Current Badge</div>
+                    <div style={{ color: colors.textMuted }}>
+                      {badgeData?.badge ? "Active" : "Not available"}
                     </div>
                   </div>
                 </Card>
@@ -1186,15 +1208,19 @@ export const Spaces: React.FC = () => {
     const userCharacterId = spriteToCharacterId[selectedSprite as keyof typeof spriteToCharacterId] || 'fighter';
 
     if (topFourData && Array.isArray(topFourData.users)) {
-      // Extract usernames from top-four API response and map to players
+      // Extract usernames and avatar_ids from top-four API response and map to players
       const users = topFourData.users.slice(0, 4); // Ensure we only get 4 users
-      const characterIds = ["samurai", "shinobi", "samurai2", "samuraiArcher"];
 
-      return users.map((user: any, index: number) => ({
-        uname: user.username || `User${index + 1}`,
-        // Use user's selected avatar for the first player, others use predefined
-        characterId: index === 0 ? userCharacterId : (characterIds[index] || "samurai"),
-      }));
+      return users.map((user: any, index: number) => {
+        // Use avatar_id as the avatar name (string), default to 'Fighter' if null
+        const avatarId = user.avatar_id || 'Fighter';
+        const characterId = spriteToCharacterId[avatarId as keyof typeof spriteToCharacterId] || 'fighter';
+        
+        return {
+          uname: user.username || `User${index + 1}`,
+          characterId: characterId,
+        };
+      });
     }
 
     // Default fallback data for career associates or when API fails
