@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import Sidebar from "../components/Sidebar";
 import Avatar, { AvatarData, getAvailableAvatarIds } from "../components/Avatar";
+import BadgeDisplay from "../components/BadgeDisplay";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
@@ -360,38 +361,17 @@ const Settings: React.FC = () => {
                         borderRadius: "6px",
                       }}
                     >
-                      {badgeImageUrl ? (
-                        <img
-                          src={badgeImageUrl}
-                          alt="Badge"
-                          style={{
-                            width: "24px",
-                            height: "24px",
-                            objectFit: "contain",
-                            borderRadius: "3px",
-                          }}
-                          onError={(e) => {
-                            // If image fails to load, show fallback
-                            e.currentTarget.style.display = 'none';
-                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div
+                      <BadgeDisplay
+                        badgeText={userBadge}
+                        badgeImageUrl={badgeImageUrl}
+                        size={24}
                         style={{
-                          display: badgeImageUrl ? 'none' : 'flex',
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: "24px",
-                          height: "24px",
+                          borderRadius: "3px",
                           fontSize: "0.75rem",
                           fontWeight: "600",
                           color: colors.textSecondary,
                         }}
-                      >
-                        N/A
-                      </div>
+                      />
                     </div>
                     <div>
                       <div
