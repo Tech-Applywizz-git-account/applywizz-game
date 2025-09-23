@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useCoinsXP, usePurchaseItem, useOwnedItems } from "../hooks/hooks";
+import { useCoinsXP, usePurchaseItem, useOwnedItems, useSelectAvatar } from "../hooks/hooks";
 
 // Sprite data structure
 interface SpriteData {
@@ -19,7 +19,7 @@ interface SpriteData {
 
 // Available sprites from assets/avatars
 const AVAILABLE_SPRITES: SpriteData[] = [
-  { id: 'Fighter', name: 'Fighter', displayName: 'Fighter', price: 100, rarity: 'common', owned: false },
+  { id: 'Fighter', name: 'Fighter', displayName: 'Fighter', price: 100, rarity: 'common', owned: true }, // Fighter is owned by default
   { id: 'Girl_1', name: 'Girl_1', displayName: 'Warrior Girl', price: 150, rarity: 'common', owned: false },
   { id: 'Pyromancer_1', name: 'Pyromancer_1', displayName: 'Fire Mage I', price: 200, rarity: 'rare', owned: false },
   { id: 'Pyromancer_2', name: 'Pyromancer_2', displayName: 'Fire Mage II', price: 250, rarity: 'rare', owned: false },
@@ -274,10 +274,21 @@ const Marketplace: React.FC = () => {
   const { data: coinsXPData, isLoading: coinsLoading, error: coinsError } = useCoinsXP();
   const { data: ownedItemsData, isLoading: ownedLoading, error: ownedError } = useOwnedItems();
   const purchaseItemMutation = usePurchaseItem();
+  const selectAvatarMutation = useSelectAvatar();
 
   // Fallback values when API fails
   const userCoins = coinsXPData?.coins ?? 0;
   const userXP = coinsXPData?.xp ?? 0;
+
+  // Initialize Fighter as default selected avatar
+  useEffect(() => {
+    const currentSelected = localStorage.getItem('selectedSprite');
+    if (!currentSelected) {
+      localStorage.setItem('selectedSprite', 'Fighter');
+      // Also try to set in backend
+      selectAvatarMutation.mutate({ item_name: 'Fighter' });
+    }
+  }, [selectAvatarMutation]);
 
   // Update sprites ownership based on API data
   useEffect(() => {
@@ -285,9 +296,18 @@ const Marketplace: React.FC = () => {
       setSprites(prev => 
         prev.map(sprite => ({
           ...sprite,
-          owned: ownedItemsData.some((item: any) => 
+          // Fighter is always owned by default, others check API
+          owned: sprite.id === 'Fighter' ? true : ownedItemsData.some((item: any) => 
             item.item_name === sprite.name && item.item_type === 'avatar'
           )
+        }))
+      );
+    } else {
+      // If no API data, ensure Fighter is still owned
+      setSprites(prev => 
+        prev.map(sprite => ({
+          ...sprite,
+          owned: sprite.id === 'Fighter' ? true : sprite.owned
         }))
       );
     }
@@ -311,8 +331,11 @@ const Marketplace: React.FC = () => {
         )
       );
 
-      // Store selected sprite in localStorage for PhaserThanosGame
+      // Set as selected avatar when purchased
       localStorage.setItem('selectedSprite', spriteId);
+      
+      // Also update selected avatar in backend
+      selectAvatarMutation.mutate({ item_name: sprite.name });
       
       console.log(`Successfully purchased ${sprite.displayName} for ${sprite.price} coins`);
     } catch (error) {

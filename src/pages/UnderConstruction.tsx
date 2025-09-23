@@ -969,11 +969,47 @@ export const Leaderboard: React.FC = () => {
                     )}
                   </div>
                   <div style={{ flex: 1, marginLeft: spacing.md }}>
-                    <h3 style={{ margin: 0 }}>
+                    <h3 style={{ margin: 0, marginBottom: spacing.xs }}>
                       {activeTab === "team"
                         ? (entry as any).team_name
-                        : (entry as any).username}
+                        : (entry as any).username || (entry as any).name}
                     </h3>
+                    {/* Badge display for individual entries */}
+                    {activeTab === "individual" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: spacing.xs }}>
+                        <span style={{ fontSize: "0.85rem", color: colors.textSecondary }}>
+                          Badge: 
+                        </span>
+                        {(entry as any).badge_image ? (
+                          <img
+                            src={(entry as any).badge_image}
+                            alt="Badge"
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              objectFit: "contain",
+                              borderRadius: "3px",
+                            }}
+                            onError={(e) => {
+                              // If image fails to load, show fallback
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'inline';
+                            }}
+                          />
+                        ) : null}
+                        <span 
+                          style={{ 
+                            display: (entry as any).badge_image ? 'none' : 'inline',
+                            fontSize: "0.85rem", 
+                            color: colors.textMuted,
+                            fontStyle: "italic"
+                          }}
+                        >
+                          {(entry as any).badge || "N/A"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div style={{ fontWeight: "700" }}>
                     {activeTab === "team"

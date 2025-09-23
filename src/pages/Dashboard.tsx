@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Target, TrendingUp, Calendar, Trophy, LucideIcon, Twitch, CloudLightning, FlagIcon } from "lucide-react";
+import { Target, TrendingUp, Calendar, Trophy, LucideIcon, CloudLightning, FlagIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PhaserThanosGame from "../components/PhaserThanosGame";
 import { Card, CardContent } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
-import { useBackendQuery } from "../hooks/hooks";
+import { useBackendQuery, useBadgeInfo } from "../hooks/hooks";
 import { isCareerAssociate, getCurrentRole } from "../utils/roleUtils";
 import {
   RoleFallbackUI,
@@ -19,6 +19,14 @@ interface ProgressCardProps {
   title: string;
   value: string;
   subtitle: string;
+  color: string;
+  delay?: number;
+}
+
+interface BadgeCardProps {
+  title: string;
+  badgeImage?: string;
+  badgeText?: string;
   color: string;
   delay?: number;
 }
@@ -317,6 +325,189 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   );
 };
 
+const BadgeCard: React.FC<BadgeCardProps> = ({
+  title,
+  badgeImage,
+  badgeText,
+  color,
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay }}
+    >
+      <Card hover style={{ padding: spacing.lg }}>
+        <CardContent>
+          {/* Badge Ring Display */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: spacing.lg,
+              marginBottom: spacing.md,
+            }}
+          >
+            <div
+              style={{
+                position: "relative",
+                width: "80px",
+                height: "80px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* Background ring */}
+              <div
+                style={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "50%",
+                  border: `6px solid ${color}20`,
+                }}
+              />
+
+              {/* Progress ring */}
+              <motion.div
+                style={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "50%",
+                  border: `6px solid transparent`,
+                  borderTopColor: color,
+                  borderRightColor: color,
+                  borderBottomColor: color,
+                  transform: "rotate(-90deg)",
+                }}
+                initial={{ clipPath: "inset(0 50% 0 0)" }}
+                animate={{ clipPath: "inset(0 15% 0 0)" }}
+                transition={{
+                  duration: 1.5,
+                  delay: delay + 0.3,
+                  ease: "easeOut",
+                }}
+              />
+
+              {/* Badge image or N/A in center */}
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  backgroundColor: `${color}20`,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 2,
+                }}
+              >
+                {badgeImage ? (
+                  <img
+                    src={badgeImage}
+                    alt="Badge"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "contain",
+                      borderRadius: "4px",
+                    }}
+                    onError={(e) => {
+                      // If image fails to load, show fallback
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                
+                {/* Fallback display - shown when no badge image or image fails */}
+                <div
+                  style={{
+                    display: badgeImage ? 'none' : 'flex',
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "32px",
+                    height: "32px",
+                    fontSize: "0.75rem",
+                    fontWeight: "600",
+                    color: colors.textSecondary,
+                  }}
+                >
+                  N/A
+                </div>
+              </div>
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: "2.2rem",
+                  fontWeight: "800",
+                  color: colors.textPrimary,
+                  marginBottom: spacing.xs,
+                  fontFamily: fonts.logo,
+                  lineHeight: 1,
+                }}
+              >
+                {badgeText || "N/A"}
+              </div>
+
+              <h3
+                style={{
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  color: colors.textSecondary,
+                  margin: 0,
+                  marginBottom: spacing.xs,
+                }}
+              >
+                {title}
+              </h3>
+
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: colors.textMuted,
+                  margin: 0,
+                }}
+              >
+                {badgeText ? "Badge Earned" : "No Badge Yet"}
+              </p>
+            </div>
+          </div>
+
+          {/* Sparkle effect */}
+          <motion.div
+            style={{
+              position: "absolute",
+              top: "10%",
+              right: "10%",
+              width: "6px",
+              height: "6px",
+              backgroundColor: color,
+              borderRadius: "50%",
+              boxShadow: `0 0 10px ${color}`,
+            }}
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              delay,
+            }}
+          />
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
 const Dashboard: React.FC = () => {
   const { scrollY } = useScroll();
   const progressY = useTransform(scrollY, [200, 500], [100, 0]);
@@ -329,6 +520,9 @@ const Dashboard: React.FC = () => {
     isLoading,
     error,
   } = useBackendQuery("progress", "/tasks-info");
+
+  // Fetch badge data for the badge card
+  const { data: badgeData, isLoading: badgeLoading, error: badgeError } = useBadgeInfo();
 
   // Get Thanos death state for battle management
 
@@ -393,16 +587,14 @@ const Dashboard: React.FC = () => {
     {
       icon: FlagIcon,
       title: "Streak",
-      value: all_time_tasks,
+      value: badgeData?.streak?.toString() || all_time_tasks,
       color: colors.secondaryLight,
     },
-    {
-      icon: Twitch,
-      title: "Badge",
-      value: all_time_tasks,
-      color: colors.textMuted,
-    },
   ];
+
+  // Badge data with fallback values
+  const userBadge = badgeData?.badge;
+  const badgeImageUrl = badgeData?.badgeImageUrl || badgeData?.badge_image;
 
   return (
     <div
@@ -610,7 +802,7 @@ const Dashboard: React.FC = () => {
                   display: "grid",
                   gridTemplateColumns:
                     window.innerWidth >= 1024
-                      ? "repeat(2, minmax(300px, 400px))"
+                      ? "repeat(3, minmax(280px, 350px))"
                       : window.innerWidth >= 640
                       ? "repeat(2, 1fr)"
                       : "1fr",
@@ -618,7 +810,7 @@ const Dashboard: React.FC = () => {
                   marginBottom: spacing["3xl"],
                   justifyContent: "center",
                   width: "100%",
-                  maxWidth: "900px",
+                  maxWidth: "1200px",
                 }}
               >
                 {/* Show progress cards based on data availability */}
@@ -644,17 +836,27 @@ const Dashboard: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  progressData.map((item, index) => (
-                    <ProgressCard
-                      key={item.title}
-                      icon={item.icon}
-                      title={item.title}
-                      value={item.value}
-                      subtitle={item.subtitle as string}
-                      color={item.color}
-                      delay={index * 0.1}
+                  <>
+                    {progressData.map((item, index) => (
+                      <ProgressCard
+                        key={item.title}
+                        icon={item.icon}
+                        title={item.title}
+                        value={item.value}
+                        subtitle={item.subtitle as string}
+                        color={item.color}
+                        delay={index * 0.1}
+                      />
+                    ))}
+                    {/* Badge Card */}
+                    <BadgeCard
+                      title="Badge"
+                      badgeImage={badgeImageUrl}
+                      badgeText={userBadge}
+                      color={colors.textMuted}
+                      delay={progressData.length * 0.1}
                     />
-                  ))
+                  </>
                 )}
               </div>
             ) : (

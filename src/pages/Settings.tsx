@@ -80,6 +80,7 @@ const Settings: React.FC = () => {
   // Badge and streak with fallback values
   const userStreak = badgeData?.streak ?? 0;
   const userBadge = badgeData?.badge ?? ':('
+  const badgeImageUrl = badgeData?.badgeImageUrl || badgeData?.badge_image;
 
   const handleAddBadge = async () => {
     if (badgeInput.trim()) {
@@ -362,7 +363,51 @@ const Settings: React.FC = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.7 }}
                   >
-                    <span style={{ fontSize: "1.5rem" }}>🏆</span>
+                    {/* Badge image or N/A */}
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: `${colors.secondary}20`,
+                        borderRadius: "6px",
+                      }}
+                    >
+                      {badgeImageUrl ? (
+                        <img
+                          src={badgeImageUrl}
+                          alt="Badge"
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            objectFit: "contain",
+                            borderRadius: "3px",
+                          }}
+                          onError={(e) => {
+                            // If image fails to load, show fallback
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        style={{
+                          display: badgeImageUrl ? 'none' : 'flex',
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "24px",
+                          height: "24px",
+                          fontSize: "0.75rem",
+                          fontWeight: "600",
+                          color: colors.textSecondary,
+                        }}
+                      >
+                        N/A
+                      </div>
+                    </div>
                     <div>
                       <div
                         style={{
