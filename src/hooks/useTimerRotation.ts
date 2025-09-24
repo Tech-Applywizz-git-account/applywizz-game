@@ -2,23 +2,26 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { isNonCareerAssociate } from "../utils/roleUtils";
 
-interface InactivityRotationOptions {
-  inactivityTimeoutMs?: number;
+interface TimerRotationOptions {
+  timerIntervalMs?: number;
   enabled?: boolean;
 }
 
 /**
- * Hook to handle automatic rotation between pages for non-career associates
+ * Hook to handle automatic rotation between pages for non-career associates using fixed timers
  * Rotates: spaces → leaderboard (team) → leaderboard (individual) → spaces
+ * Unlike inactivity-based rotation, this advances automatically on fixed intervals
+ * Manual navigation resets the timer to allow user interaction flexibility
  */
-export const useInactivityRotation = (
-  options: InactivityRotationOptions = {}
+export const useTimerRotation = (
+  options: TimerRotationOptions = {}
 ) => {
-  const { inactivityTimeoutMs = 30000, enabled = true } = options; // 30 seconds default
+  const { timerIntervalMs = 30000, enabled = true } = options; // 30 seconds default
   const navigate = useNavigate();
   const location = useLocation();
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout>();
   const currentRouteIndexRef = useRef(0);
+  const lastNavigationTimeRef = useRef<number>(Date.now());
 
   // Define the rotation sequence for non-CA users
   const rotationSequence = [
@@ -49,11 +52,15 @@ export const useInactivityRotation = (
         currentRouteIndexRef.current = 1; // default to team
       }
     }
+
+    // Reset timer when user manually navigates
+    lastNavigationTimeRef.current = Date.now();
+    resetTimer();
   }, [location]);
 
-  const resetInactivityTimer = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+  const startTimerRotation = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
 
     // Only set timer for non-career associates and when enabled
@@ -61,75 +68,55 @@ export const useInactivityRotation = (
       return;
     }
 
-    timeoutRef.current = setTimeout(() => {
+    intervalRef.current = setInterval(() => {
       // Move to next route in sequence
       currentRouteIndexRef.current =
         (currentRouteIndexRef.current + 1) % rotationSequence.length;
       const nextRoute = rotationSequence[currentRouteIndexRef.current];
 
-      console.log(`Auto-rotating to: ${nextRoute.displayName}`);
+      console.log(`Timer-rotating to: ${nextRoute.displayName}`);
 
       if (nextRoute.state) {
         navigate(nextRoute.path, { state: nextRoute.state });
       } else {
         navigate(nextRoute.path);
       }
-    }, inactivityTimeoutMs);
+    }, timerIntervalMs);
+  };
+
+  const resetTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    startTimerRotation();
   };
 
   useEffect(() => {
-    // Only attach listeners for non-career associates
-    if (!enabled || !isNonCareerAssociate()) {
-      return;
+    // Start the timer rotation when the hook is initialized
+    if (enabled && isNonCareerAssociate()) {
+      startTimerRotation();
     }
-
-    const events = [
-      "mousedown",
-      "mousemove",
-      "keypress",
-      "keydown",
-      "scroll",
-      "touchstart",
-      "click",
-    ];
-
-    const handleActivity = () => {
-      resetInactivityTimer();
-    };
-
-    // Attach event listeners
-    events.forEach((event) => {
-      document.addEventListener(event, handleActivity, true);
-    });
-
-    // Start the initial timer
-    resetInactivityTimer();
 
     // Cleanup function
     return () => {
-      events.forEach((event) => {
-        document.removeEventListener(event, handleActivity, true);
-      });
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
-  }, [enabled, inactivityTimeoutMs]);
+  }, [enabled, timerIntervalMs]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
   }, []);
 
   return {
-    resetTimer: resetInactivityTimer,
+    resetTimer,
     currentRouteIndex: currentRouteIndexRef.current,
     rotationSequence,
   };
 };
-

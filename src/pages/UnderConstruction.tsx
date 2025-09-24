@@ -17,7 +17,7 @@ import Avatar from "../components/Avatar";
 import { Card } from "../components/ui/card";
 import { colors, fonts, spacing } from "../utils/theme";
 import { useAuthContext, useBackendQuery } from "../hooks/hooks";
-import { useInactivityRotation } from "../hooks/useInactivityRotation";
+import { useTimerRotation } from "../hooks/useTimerRotation";
 import { useLeaderboardAutoScroll } from "../hooks/useLeaderboardAutoScroll";
 import { decodeJwt } from "jose";
 import FourPlayerArena from "../components/fourplayer";
@@ -687,10 +687,10 @@ export const Leaderboard: React.FC = () => {
     }
   }, [routeActiveTab, activeTab]);
 
-  // Initialize inactivity rotation for non-CA users
-  useInactivityRotation({
+  // Initialize timer rotation for non-CA users
+  useTimerRotation({
     enabled: !hasCareerAccess, // Only enable for non-CA users
-    inactivityTimeoutMs: 30000, // 30 seconds
+    timerIntervalMs: 30000, // 30 seconds
   });
 
   // Initialize auto-scroll for leaderboard card (non-CA users, individual tab only)
@@ -1115,10 +1115,10 @@ export const Spaces: React.FC = () => {
     typeof window !== "undefined" && window.innerWidth >= 1024;
   const hasCareerAccess = isCareerAssociate();
 
-  // Initialize inactivity rotation for non-CA users
-  useInactivityRotation({
+  // Initialize timer rotation for non-CA users
+  useTimerRotation({
     enabled: !hasCareerAccess, // Only enable for non-CA users
-    inactivityTimeoutMs: 30000, // 30 seconds
+    timerIntervalMs: 30000, // 30 seconds
   });
 
   // Fetch top-four data for non-access users - properly handle loading state
