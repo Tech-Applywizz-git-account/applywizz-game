@@ -135,7 +135,7 @@ class ArenaScene extends Phaser.Scene {
     this.lastHp = this.currentHp;
     this.currentHp = clamped;
 
-    if (this.currentHp <= 0) this.killThanos(); // orchestration (final heavies -> death)
+    if (this.currentHp <= 700) this.killThanos(); // orchestration (final heavies -> death)
   }
 
   preload() {
@@ -237,7 +237,9 @@ class ArenaScene extends Phaser.Scene {
       .setAlpha(0);
 
     // If HP already 0 on mount, run final assault then death (after sprites exist)
-    if (this.currentHp <= 0) {
+    console.log("Initial boss HP:", this.currentHp);
+    if (this.currentHp <= 700) {
+      console.log("Auto-kill Thanos on mount");
       this.time.delayedCall(0, () => this.killThanos());
       return; // don't start loop
     }
